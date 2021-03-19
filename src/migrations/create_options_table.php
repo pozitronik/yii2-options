@@ -5,7 +5,7 @@ use yii\db\Migration;
 /**
  * Class create_users_options_table
  */
-class create_users_options_table extends Migration {
+class create_options_table extends Migration {
 	/**
 	 * {@inheritdoc}
 	 */

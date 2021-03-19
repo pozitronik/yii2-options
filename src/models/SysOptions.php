@@ -5,7 +5,7 @@
  */
 declare(strict_types = 1);
 
-namespace app\modules\targets\stubs;
+namespace pozitronik\sys_options\models;
 
 use Exception;
 use Throwable;

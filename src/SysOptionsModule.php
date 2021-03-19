@@ -2,7 +2,7 @@
 /** @noinspection EmptyClassInspection */
 declare(strict_types = 1);
 
-namespace pozitronik\users_options;
+namespace pozitronik\sys_options;
 
 use yii\base\Module;
 
