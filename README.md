@@ -34,7 +34,7 @@ php composer.phar require pozitronik/yii2-options "dev-master"
 
 Расширению необходима таблица для хранения данных. Её можно создать, выполнив команду:
 
-`yii migrate --migrationPath=@vendor/pozitronik/yii2-options/migrations`
+`yii migrate --migrationPath=@vendor/pozitronik/yii2-options/src/migrations`
 
 В этом случае будет создана таблица `sys_options`, и никакой дополнительной настройки более не потребуется.
 
