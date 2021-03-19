@@ -10,5 +10,5 @@ use yii\base\Module;
  * Class UsersOptionsModule
  * @package pozitronik\users_options
  */
-class UsersOptionsModule extends Module {
+class SysOptionsModule extends Module {
 }
