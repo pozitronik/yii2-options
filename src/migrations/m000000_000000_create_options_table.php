@@ -3,9 +3,9 @@ declare(strict_types = 1);
 use yii\db\Migration;
 
 /**
- * Class create_users_options_table
+ * Class m000000_000000_create_users_options_table
  */
-class create_options_table extends Migration {
+class m000000_000000_create_options_table extends Migration {
 	/**
 	 * {@inheritdoc}
 	 */
