@@ -20,7 +20,6 @@ use yii\helpers\ArrayHelper;
 /**
  * Class SysOptions
  * Хранение системных настроек в БД/кеше
- * @package app\modules\targets\stubs
  */
 class SysOptions extends Model {
 
