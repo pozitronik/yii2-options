@@ -44,7 +44,7 @@ class SysOptions extends Model {
 	 * @var bool enable intermediate caching via Yii::$app->cache (must be configured in framework). Default option
 	 * value can be set in module configuration, e.g.
 	 * ...
-	 * 'usersoptions' => [
+	 * 'sysoptions' => [
 	 *        'class' => UsersOptionsModule::class,
 	 *            'params' => [
 	 *                'cacheEnabled' => true//defaults to false
