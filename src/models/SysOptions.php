@@ -122,15 +122,11 @@ class SysOptions extends Model {
 	 */
 	public function get(string $option, $default = null) {
 		if ($this->cacheEnabled) {
-			if (false === $value = Yii::$app->cache->getOrSet(static::class."::get({$option})", function() use ($option) {
-					return $this->retrieveDbValue($option);
-				}, null, new TagDependency(['tags' => static::class."::get({$option})"]))) {
-				return $default;
-			}
-		} else {
-			$value = $this->retrieveDbValue($option);
+			return Yii::$app->cache->getOrSet(static::class."::get({$option})", function() use ($option, $default) {
+				return (null === $value = $this->unserialize($this->retrieveDbValue($option)))?$default:$value;
+			}, null, new TagDependency(['tags' => static::class."::get({$option})"]));
 		}
-		return (null === $value = $this->unserialize($value))?$default:$value;
+		return (null === $value = $this->unserialize($this->retrieveDbValue($option)))?$default:$value;
 	}
 
 	/**
