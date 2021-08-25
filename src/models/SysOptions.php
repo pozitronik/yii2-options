@@ -66,7 +66,7 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param $value
+	 * @param mixed $value
 	 * @return string
 	 */
 	protected function serialize($value):string {
@@ -74,19 +74,26 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param string $value
+	 * @param string|resource $value
 	 * @return mixed
 	 */
-	protected function unserialize(string $value) {
-		return (null === $this->serializer)?unserialize($value, ['allowed_classes' => true]):call_user_func($this->serializer[1], $value);
+	protected function unserialize($value) {
+		if (is_resource($value) && 'stream' === get_resource_type($value)) {
+			$serialized = stream_get_contents($value);
+			fseek($value, 0);
+		} else {
+			$serialized = $value;
+		}
+		return (null === $this->serializer)?unserialize($serialized, ['allowed_classes' => true]):call_user_func($this->serializer[1], $serialized);
+
 	}
 
 	/**
 	 * @param string $option
-	 * @return string
+	 * @return string|resource
 	 * @throws Exception
 	 */
-	protected function retrieveDbValue(string $option):string {
+	protected function retrieveDbValue(string $option) {
 		return ArrayHelper::getValue((new Query())->select('value')->from($this->_tableName)->where(['option' => $option])->one(), 'value', serialize(null));
 	}
 
