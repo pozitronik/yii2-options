@@ -94,7 +94,7 @@ class SysOptions extends Model {
 	 * @throws Exception
 	 */
 	protected function retrieveDbValue(string $option) {
-		return ArrayHelper::getValue((new Query())->select('value')->from($this->_tableName)->where(['option' => $option])->one(), 'value', serialize(null));
+		return ArrayHelper::getValue((new Query())->select('value')->from($this->_tableName)->where(['option' => $option])->one(), 'value', $this->serialize(null));
 	}
 
 	/**
