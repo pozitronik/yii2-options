@@ -89,7 +89,7 @@ class SysOptions extends Model {
 	 * @throws Exception
 	 */
 	protected function retrieveDbValue(string $option):string {
-		$value = ArrayHelper::getValue((new Query())->select('value')->from($this->_tableName)->where(['option' => $option])->one(), 'value', serialize(null));
+		$value = ArrayHelper::getValue((new Query())->select('value')->from($this->_tableName)->where(['option' => $option])->one(), 'value', $this->serialize(null));
 		if (is_resource($value) && 'stream' === get_resource_type($value)) {
 			$result = stream_get_contents($value);
 			fseek($value, 0);
