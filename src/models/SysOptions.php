@@ -1,8 +1,4 @@
 <?php
-/**
- * @noinspection MissingPropertyAnnotationsInspection
- * Из-за методов get/set. Здесь всё корректно, я специально дал им такие имена, они не конфликтуют с геттерами/сеттерами
- */
 declare(strict_types = 1);
 
 namespace pozitronik\sys_options\models;
