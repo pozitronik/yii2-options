@@ -29,7 +29,7 @@ class SysOptions extends Model {
 	 * with a DB connection object.
 	 * This can also be a configuration array for creating the object.
 	 */
-	public $db = 'db';
+	public Connection|array|string $db = 'db';
 
 	/**
 	 * @var null|array the functions used to serialize and unserialize values. Defaults to null, meaning
@@ -38,7 +38,7 @@ class SysOptions extends Model {
 	 * a two-element array. The first element specifies the serialization function, and the second the deserialization
 	 * function.
 	 */
-	public $serializer;
+	public null|array $serializer;
 	/**
 	 * @var bool enable intermediate caching via Yii::$app->cache (must be configured in framework). Default option
 	 * value can be set in module configuration, e.g.
@@ -51,9 +51,9 @@ class SysOptions extends Model {
 	 *        ],
 	 * ...
 	 */
-	public $cacheEnabled = true;
+	public bool $cacheEnabled = true;
 
-	private $_tableName = 'sys_options';
+	private string $_tableName = 'sys_options';
 
 	/**
 	 * {@inheritdoc}
