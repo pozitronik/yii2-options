@@ -34,7 +34,7 @@ class SysOptions extends Model {
 	 * a two-element array. The first element specifies the serialization function, and the second the deserialization
 	 * function.
 	 */
-	public null|array $serializer;
+	public null|array $serializer = null;
 	/**
 	 * @var bool enable intermediate caching via Yii::$app->cache (must be configured in framework). Default option
 	 * value can be set in module configuration, e.g.
