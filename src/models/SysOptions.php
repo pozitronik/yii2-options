@@ -40,7 +40,7 @@ class SysOptions extends Model {
 	 * value can be set in module configuration, e.g.
 	 * ...
 	 * 'sysoptions' => [
-	 *        'class' => UsersOptionsModule::class,
+	 *        'class' => SysOptionsModule::class,
 	 *            'params' => [
 	 *                'cacheEnabled' => true//defaults to false
 	 *            ]
