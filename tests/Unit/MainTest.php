@@ -3,12 +3,7 @@ declare(strict_types = 1);
 
 namespace Tests\Unit;
 
-use app\fixtures\BooksFixture;
-use app\fixtures\PartnersFixture;
-use app\fixtures\UsersFixture;
 use Codeception\Test\Unit;
-use Exception;
-use Faker\Factory;
 use pozitronik\sys_options\models\SysOptions;
 use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
@@ -16,7 +11,6 @@ use Throwable;
 use Yii;
 use yii\base\Application;
 use yii\base\Exception as BaseException;
-use yii\base\InvalidRouteException;
 
 /**
  *
@@ -26,13 +20,10 @@ class MainTest extends Unit {
 	protected UnitTester $tester;
 
 	/**
-	 * @return string[]
-	 * @throws Exception
-	 * @throws InvalidRouteException
+	 * @Override
 	 */
-	public function _fixtures():array {
+	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
-		return ['users' => UsersFixture::class, 'books' => BooksFixture::class, 'partners' => PartnersFixture::class,];
 	}
 
 	/**
