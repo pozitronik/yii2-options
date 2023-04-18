@@ -35,6 +35,7 @@ class MainTest extends Unit {
 
 	/**
 	 * @return void
+	 * @throws BaseException
 	 */
 	public function testGetSet():void {
 		$options = new SysOptions();
