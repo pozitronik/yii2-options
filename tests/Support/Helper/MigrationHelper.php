@@ -13,9 +13,10 @@ use yii\console\Exception;
  */
 class MigrationHelper {
 	/**
+	 * @param array $migrationConfiguration
 	 * @return void
-	 * @throws InvalidRouteException
 	 * @throws Exception
+	 * @throws InvalidRouteException
 	 */
 	public static function migrate(array $migrationConfiguration = []):void {
 		$migrationController = new MigrateController('migrations', Yii::$app);
@@ -27,6 +28,7 @@ class MigrationHelper {
 	}
 
 	/**
+	 * @param array $migrationConfiguration
 	 * @return void
 	 * @throws Exception
 	 * @throws InvalidRouteException
