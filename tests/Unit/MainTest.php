@@ -5,6 +5,8 @@ namespace Tests\Unit;
 
 use Codeception\Test\Unit;
 use Tests\Support\UnitTester;
+use Yii;
+use yii\base\Application;
 
 /**
  *
@@ -23,6 +25,6 @@ class MainTest extends Unit {
 	 * @return void
 	 */
 	public function testSomeFeature():void {
-
+		$this->tester->assertInstanceOf(Application::class, Yii::$app);
 	}
 }

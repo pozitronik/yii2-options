@@ -4,6 +4,9 @@
 
 actor: UnitTester
 modules:
-    enabled:
-        - Asserts
+  enabled:
+    - Asserts
+    - Db
+    - Yii2:
+        configFile: 'tests/_app/config/main.php'
 step_decorators: ~
