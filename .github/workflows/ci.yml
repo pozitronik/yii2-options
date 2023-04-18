@@ -65,9 +65,6 @@ jobs:
       - name: Install composer dependencies
         run: composer install
 
-      - name: Prepare test
-        run: cp tests/.env.example tests/.env
-
       - name: Run tests
         run: vendor/bin/codecept run
         env:
