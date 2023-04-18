@@ -17,9 +17,12 @@ class MigrationHelper {
 	 * @throws InvalidRouteException
 	 * @throws Exception
 	 */
-	public static function migrate():void {
+	public static function migrate(array $migrationConfiguration = []):void {
 		$migrationController = new MigrateController('migrations', Yii::$app);
 		$migrationController->interactive = false;
+		foreach ($migrationConfiguration as $param => $value) {
+			$migrationController->{$param} = $value;
+		}
 		$migrationController->runAction('up');
 	}
 
@@ -28,9 +31,12 @@ class MigrationHelper {
 	 * @throws Exception
 	 * @throws InvalidRouteException
 	 */
-	public static function migrateFresh():void {
+	public static function migrateFresh(array $migrationConfiguration = []):void {
 		$migrationController = new MigrateController('migrations', Yii::$app);
 		$migrationController->interactive = false;
+		foreach ($migrationConfiguration as $param => $value) {
+			$migrationController->{$param} = $value;
+		}
 		$migrationController->runAction('fresh');
 	}
 }
