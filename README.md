@@ -78,14 +78,16 @@ $options->serializer = [
 
 Публичные методы класса:
 
-* `get(string $option)` - возвращает значение параметра `$option`.
+* `get(string $option):mixed` - возвращает значение параметра `$option`.
 * `set(string $option, $value):bool` - присваивает параметру `$option` значение `$value`. Возвращает успех сохранения параметра.
+* `drop(string $option):bool` - удаляет параметр `$option`. Возвращает успех удаления параметра.
 
 а также статические методы
-* `getStatic(int $user_id, string $option)`
-* `setStatic(int $user_id, string $option, $value):bool`
+* `getStatic(string $option):mixed`
+* `setStatic(string $option, $value):bool`
+* `dropStatic(string $option):bool`
 
-Аналогичные вызовам `get`/`set`.
+Аналогичные вызовам `get()`/`set()`/`drop()`.
 
 Лицензия
 --------
