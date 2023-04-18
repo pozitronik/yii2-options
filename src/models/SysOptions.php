@@ -74,9 +74,7 @@ class SysOptions extends Model {
 	 * @return mixed
 	 */
 	protected function unserialize(string $value) {
-		return (null === $this->serializer)
-			?unserialize($value, ['allowed_classes' => true])
-			:call_user_func($this->serializer[1], $value);
+		return (null === $this->serializer)?unserialize($value, ['allowed_classes' => true]):call_user_func($this->serializer[1], $value);
 	}
 
 	/**
@@ -113,14 +111,28 @@ class SysOptions extends Model {
 
 	/**
 	 * @param string $option
-	 * @param null $default
+	 * @return bool
+	 */
+	protected function removeDbValue(string $option):bool {
+		try {
+			return $this->db->noCache(function(Connection $db) use ($option) {
+				$db->createCommand()->delete($this->_tableName, compact('option'))->execute();
+				return true;
+			});
+		} catch (Throwable $e) {
+			Yii::warning("Unable to remove table value: {$e->getMessage()}", __METHOD__);
+		}
+		return false;
+	}
+
+	/**
+	 * @param string $option
+	 * @param mixed $default
 	 * @return mixed|null (null by default)
 	 * @throws Exception
 	 */
-	public function get(string $option, $default = null) {
-		$dbValue = ($this->cacheEnabled)
-			?Yii::$app->cache->getOrSet(static::class."::get({$option})", fn() => $this->retrieveDbValue($option), null, new TagDependency(['tags' => static::class."::get({$option})"]))
-			:$this->retrieveDbValue($option);
+	public function get(string $option, mixed $default = null):mixed {
+		$dbValue = ($this->cacheEnabled)?Yii::$app->cache->getOrSet(static::class."::get({$option})", fn() => $this->retrieveDbValue($option), null, new TagDependency(['tags' => static::class."::get({$option})"])):$this->retrieveDbValue($option);
 		return (null === $value = $this->unserialize($dbValue))?$default:$value;
 	}
 
@@ -132,6 +144,15 @@ class SysOptions extends Model {
 	public function set(string $option, mixed $value):bool {
 		TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
 		return $this->applyDbValue($option, $this->serialize($value));
+	}
+
+	/**
+	 * @param string $option
+	 * @return bool
+	 */
+	public function drop(string $option):bool {
+		TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		return $this->removeDbValue($option);
 	}
 
 	/**
@@ -153,6 +174,15 @@ class SysOptions extends Model {
 	 */
 	public static function setStatic(string $option, mixed $value):bool {
 		return (new self())->set($option, $value);
+	}
+
+	/**
+	 * Статический вызов с той же логикой, что у drop()
+	 * @param string $option
+	 * @return bool
+	 */
+	public static function dropStatic(string $option):bool {
+		return (new self())->drop($option);
 	}
 
 }

@@ -88,4 +88,81 @@ class MainTest extends Unit {
 		static::assertEquals($randomFloat, SysOptions::getStatic('float'));
 		static::assertEquals($randomArray, SysOptions::getStatic('array'));
 	}
+
+	/**
+	 * @return void
+	 * @throws BaseException
+	 * @throws Throwable
+	 */
+	public function testDrop():void {
+		$options = new SysOptions();
+		$randomString = Yii::$app->security->generateRandomString();
+		$randomInt = random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$randomFloat = random_int(PHP_INT_MIN, PHP_INT_MAX) / random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$randomArray = array_map(static function() {
+			return match (random_int(1, 3)) {
+				1 => Yii::$app->security->generateRandomString(),
+				2 => random_int(PHP_INT_MIN, PHP_INT_MAX),
+				3 => random_int(PHP_INT_MIN, PHP_INT_MAX) / random_int(PHP_INT_MIN, PHP_INT_MAX),
+			};
+		}, range(1, random_int(1, 100)));
+
+		static::assertTrue($options->set('string', $randomString));
+		static::assertTrue($options->set('int', $randomInt));
+		static::assertTrue($options->set('float', $randomFloat));
+		static::assertTrue($options->set('array', $randomArray));
+
+		static::assertEquals($randomString, $options->get('string'));
+		static::assertEquals($randomInt, $options->get('int'));
+		static::assertEquals($randomFloat, $options->get('float'));
+		static::assertEquals($randomArray, $options->get('array'));
+
+		static::assertTrue($options->drop('string'));
+		static::assertTrue($options->drop('int'));
+		static::assertTrue($options->drop('float'));
+		static::assertTrue($options->drop('array'));
+
+		static::assertNull($options->get('string'));
+		static::assertNull($options->get('int'));
+		static::assertNull($options->get('float'));
+		static::assertNull($options->get('array'));
+	}
+
+	/**
+	 * @return void
+	 * @throws BaseException
+	 * @throws Throwable
+	 */
+	public function testDropStatic():void {
+		$randomString = Yii::$app->security->generateRandomString();
+		$randomInt = random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$randomFloat = random_int(PHP_INT_MIN, PHP_INT_MAX) / random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$randomArray = array_map(static function() {
+			return match (random_int(1, 3)) {
+				1 => Yii::$app->security->generateRandomString(),
+				2 => random_int(PHP_INT_MIN, PHP_INT_MAX),
+				3 => random_int(PHP_INT_MIN, PHP_INT_MAX) / random_int(PHP_INT_MIN, PHP_INT_MAX),
+			};
+		}, range(1, random_int(1, 100)));
+
+		static::assertTrue(SysOptions::setStatic('string', $randomString));
+		static::assertTrue(SysOptions::setStatic('int', $randomInt));
+		static::assertTrue(SysOptions::setStatic('float', $randomFloat));
+		static::assertTrue(SysOptions::setStatic('array', $randomArray));
+
+		static::assertEquals($randomString, SysOptions::getStatic('string'));
+		static::assertEquals($randomInt, SysOptions::getStatic('int'));
+		static::assertEquals($randomFloat, SysOptions::getStatic('float'));
+		static::assertEquals($randomArray, SysOptions::getStatic('array'));
+
+		static::assertTrue(SysOptions::dropStatic('string'));
+		static::assertTrue(SysOptions::dropStatic('int'));
+		static::assertTrue(SysOptions::dropStatic('float'));
+		static::assertTrue(SysOptions::dropStatic('array'));
+
+		static::assertNull(SysOptions::getStatic('string'));
+		static::assertNull(SysOptions::getStatic('int'));
+		static::assertNull(SysOptions::getStatic('float'));
+		static::assertNull(SysOptions::getStatic('array'));
+	}
 }
