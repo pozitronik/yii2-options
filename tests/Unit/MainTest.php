@@ -46,7 +46,27 @@ class MainTest extends Unit {
 	 * @return void
 	 */
 	public function testGetSet():void {
+		$options = new SysOptions();
+		$randomString = Yii::$app->security->generateRandomString();
+		$randomInt = random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$randomFloat = random_int(PHP_INT_MIN, PHP_INT_MAX) / random_int(PHP_INT_MIN, PHP_INT_MAX);
+		$randomArray = array_map(static function() {
+			return match (random_int(1, 3)) {
+				1 => Yii::$app->security->generateRandomString(),
+				2 => random_int(PHP_INT_MIN, PHP_INT_MAX),
+				3 => random_int(PHP_INT_MIN, PHP_INT_MAX) / random_int(PHP_INT_MIN, PHP_INT_MAX),
+			};
+		}, range(1, random_int(1, 100)));
 
+		static::assertTrue($options->set('string', $randomString));
+		static::assertTrue($options->set('int', $randomInt));
+		static::assertTrue($options->set('float', $randomFloat));
+		static::assertTrue($options->set('array', $randomArray));
+
+		static::assertEquals($randomString, $options->get('string'));
+		static::assertEquals($randomInt, $options->get('int'));
+		static::assertEquals($randomFloat, $options->get('float'));
+		static::assertEquals($randomArray, $options->get('array'));
 	}
 
 	/**
