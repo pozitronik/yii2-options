@@ -159,10 +159,10 @@ class SysOptions extends Model {
 	 * Статический вызов с той же логикой, что у get()
 	 * @param string $option
 	 * @param null $default
-	 * @return mixed|false (null by default)
+	 * @return mixed (null by default)
 	 * @throws Throwable
 	 */
-	public static function getStatic(string $option, $default = null) {
+	public static function getStatic(string $option, mixed $default = null):mixed {
 		return (new self())->get($option, $default);
 	}
 
