@@ -2,6 +2,9 @@ yii2-options
 =================
 Хранение системных настроек на сервере.
 
+[![Build Status](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml/badge.svg)](https://github.com/pozitronik/yii2-options/actions)
+
+
 Установка
 ---------
 

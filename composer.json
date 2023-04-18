@@ -18,7 +18,13 @@
 		"php": ">=8.0"
 	},
 	"require-dev": {
-		"yiisoft/yii2": "dev-master"
+		"yiisoft/yii2": "dev-master",
+		"codeception/codeception": "^5.0",
+		"codeception/module-asserts": "*",
+		"codeception/module-yii2": "*",
+		"codeception/module-db": "*",
+		"vlucas/phpdotenv": "^5.4.1",
+		"codeception/module-phpbrowser": "*"
 	},
 	"autoload": {
 		"psr-4": {
