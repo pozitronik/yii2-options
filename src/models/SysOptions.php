@@ -60,6 +60,11 @@ class SysOptions extends Model {
 		$this->db = Instance::ensure($this->db, Connection::class);
 		$this->_tableName = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.tableName', $this->_tableName);
 		$this->cacheEnabled = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheEnabled', $this->cacheEnabled);
+
+		if ($this->cacheEnabled && !Yii::$app->cache) {
+			Yii::warning('Кеширование включено, но компонент cache не настроен в приложении. Кеширование отключено.', __METHOD__);
+			$this->cacheEnabled = false;
+		}
 	}
 
 	/**
@@ -162,7 +167,7 @@ class SysOptions extends Model {
 	 */
 	public function get(string $option, mixed $default = null):mixed {
 		$this->validateOptionName($option);
-		$dbValue = ($this->cacheEnabled)
+		$dbValue = ($this->cacheEnabled && Yii::$app->cache)
 			?Yii::$app->cache->getOrSet(
 				static::class."::get({$option})",
 				fn() => $this->retrieveDbValue($option),
@@ -181,7 +186,9 @@ class SysOptions extends Model {
 	 */
 	public function set(string $option, mixed $value):bool {
 		$this->validateOptionName($option);
-		TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		if ($this->cacheEnabled && Yii::$app->cache) {
+			TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		}
 		return $this->applyDbValue($option, $this->serialize($value));
 	}
 
@@ -192,7 +199,9 @@ class SysOptions extends Model {
 	 */
 	public function drop(string $option):bool {
 		$this->validateOptionName($option);
-		TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		if ($this->cacheEnabled && Yii::$app->cache) {
+			TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		}
 		return $this->removeDbValue($option);
 	}
 
