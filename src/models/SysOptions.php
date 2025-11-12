@@ -66,6 +66,19 @@ class SysOptions extends Model {
 		$this->_tableName = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.tableName', $this->_tableName);
 		$this->cacheEnabled = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheEnabled', $this->cacheEnabled);
 
+		// Validate serializer configuration
+		if (null !== $this->serializer) {
+			if (!is_array($this->serializer)) {
+				throw new Exception('Serializer must be an array with two callable elements');
+			}
+			if (!isset($this->serializer[0], $this->serializer[1])) {
+				throw new Exception('Serializer must have both serialize (index 0) and unserialize (index 1) functions');
+			}
+			if (!is_callable($this->serializer[0]) || !is_callable($this->serializer[1])) {
+				throw new Exception('Both serializer elements must be callable');
+			}
+		}
+
 		// Resolve cache component
 		if (null === $this->cache) {
 			// Backward compatibility: if cache is not specified, use application default cache
