@@ -146,31 +146,33 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param string $option
-	 * @return string
+	 * Retrieves a serialized option value from the database
+	 * @param string $option The option name to retrieve
+	 * @return string|null The serialized option value or null if option doesn't exist
 	 */
-	protected function retrieveDbValue(string $option):string {
+	protected function retrieveDbValue(string $option):?string {
 		try {
-			$value = ArrayHelper::getValue(
-				(new Query())
-					->noCache()
-					->select('value')
-					->from($this->_tableName)
-					->where(['option' => $option])
-					->one(),
-				'value',
-				$this->serialize(null)
-			);
-			if (is_resource($value) && 'stream' === get_resource_type($value)) {
-				$result = stream_get_contents($value);
-				fseek($value, 0);
-				return $result;
+			$row = (new Query())
+				->noCache()
+				->select('value')
+				->from($this->_tableName)
+				->where(['option' => $option])
+				->one();
+
+			if (false !== $row) {
+				/** @noinspection OffsetOperationsInspection There's no way to explain EA Extended that it's a proper structure */
+				$value = $row['value'];
+				if (is_resource($value) && 'stream' === get_resource_type($value)) {
+					$result = stream_get_contents($value);
+					fseek($value, 0);
+					return $result;
+				}
+				return $value;
 			}
-			return $value;
 		} catch (Throwable $e) {
 			Yii::warning("Unable to retrieve option value from database: {$e->getMessage()}", __METHOD__);
-			return $this->serialize(null);
 		}
+		return null;
 	}
 
 	/**
@@ -207,22 +209,28 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param string $option
-	 * @param mixed $default
-	 * @return mixed|null (null by default)
-	 * @throws Exception
+	 * Retrieves an option value from the database (with caching if enabled)
+	 * @param string $option The option name to retrieve
+	 * @param mixed $default Default value to return if option doesn't exist (null by default)
+	 * @return mixed The option value or default if option doesn't exist
+	 * @throws Exception If option name validation fails
 	 */
 	public function get(string $option, mixed $default = null):mixed {
 		$this->validateOptionName($option);
-		$dbValue = ($this->cacheEnabled && $this->cache)
-			?$this->cache->getOrSet(
-				static::class."::get({$option})",
-				fn() => $this->retrieveDbValue($option),
-				null,
-				new TagDependency(['tags' => static::class."::get({$option})"])
-			)
-			:$this->retrieveDbValue($option);
-		return (null === $value = $this->unserialize($dbValue))?$default:$value;
+
+		$cacheKey = static::class."::get({$option})";
+
+		if ($this->cacheEnabled) { // Try to get from cache first, else retrieve from DB
+			if ((false === $dbValue = $this->cache->get($cacheKey)) && null !== $dbValue = $this->retrieveDbValue($option)) {
+				$this->cache->set($cacheKey, $dbValue, null, new TagDependency(['tags' => static::class."::get({$option})"]));
+			}
+		} else { // No cache - retrieve directly
+			$dbValue = $this->retrieveDbValue($option);
+		}
+
+		return (null === $dbValue)
+			?$default // If option doesn't exist in database, return default value
+			:$this->unserialize($dbValue); // Option exists, return its value (even if it's null)
 	}
 
 	/**
