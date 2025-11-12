@@ -62,6 +62,14 @@ class SysOptions extends Model {
 	}
 
 	/**
+	 * Возвращает имя таблицы, используемой для хранения опций
+	 * @return string
+	 */
+	public function getTableName():string {
+		return $this->_tableName;
+	}
+
+	/**
 	 * @param mixed $value
 	 * @return string
 	 */
