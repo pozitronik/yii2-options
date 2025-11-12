@@ -140,7 +140,14 @@ class SysOptions extends Model {
 	 * @throws Exception
 	 */
 	public function get(string $option, mixed $default = null):mixed {
-		$dbValue = ($this->cacheEnabled)?Yii::$app->cache->getOrSet(static::class."::get({$option})", fn() => $this->retrieveDbValue($option), null, new TagDependency(['tags' => static::class."::get({$option})"])):$this->retrieveDbValue($option);
+		$dbValue = ($this->cacheEnabled)
+			?Yii::$app->cache->getOrSet(
+				static::class."::get({$option})",
+				fn() => $this->retrieveDbValue($option),
+				null,
+				new TagDependency(['tags' => static::class."::get({$option})"])
+			)
+			:$this->retrieveDbValue($option);
 		return (null === $value = $this->unserialize($dbValue))?$default:$value;
 	}
 
