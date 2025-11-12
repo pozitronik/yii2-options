@@ -148,16 +148,29 @@ class SysOptions extends Model {
 	/**
 	 * @param string $option
 	 * @return string
-	 * @throws Exception
 	 */
 	protected function retrieveDbValue(string $option):string {
-		$value = ArrayHelper::getValue((new Query())->noCache()->select('value')->from($this->_tableName)->where(['option' => $option])->one(), 'value', $this->serialize(null));
-		if (is_resource($value) && 'stream' === get_resource_type($value)) {
-			$result = stream_get_contents($value);
-			fseek($value, 0);
-			return $result;
+		try {
+			$value = ArrayHelper::getValue(
+				(new Query())
+					->noCache()
+					->select('value')
+					->from($this->_tableName)
+					->where(['option' => $option])
+					->one(),
+				'value',
+				$this->serialize(null)
+			);
+			if (is_resource($value) && 'stream' === get_resource_type($value)) {
+				$result = stream_get_contents($value);
+				fseek($value, 0);
+				return $result;
+			}
+			return $value;
+		} catch (Throwable $e) {
+			Yii::warning("Unable to retrieve option value from database: {$e->getMessage()}", __METHOD__);
+			return $this->serialize(null);
 		}
-		return $value;
 	}
 
 	/**
