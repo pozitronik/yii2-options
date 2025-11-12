@@ -103,17 +103,17 @@ class SysOptions extends Model {
 
 	/**
 	 * Returns the name of the table used for storing options
-	 * @return string
+	 * @return string The table name
 	 */
 	public function getTableName():string {
 		return $this->_tableName;
 	}
 
 	/**
-	 * Validates option name
-	 * @param string $option
+	 * Validates option name against length constraints (1-256 characters)
+	 * @param string $option The option name to validate
 	 * @return void
-	 * @throws Exception
+	 * @throws Exception If validation fails
 	 */
 	private function validateOptionName(string $option):void {
 		$validator = new StringValidator([
@@ -130,18 +130,20 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param mixed $value
-	 * @return string
+	 * Serializes a value for storage in the database
+	 * @param mixed $value The value to serialize
+	 * @return string The serialized value
 	 */
 	protected function serialize(mixed $value):string {
 		return (null === $this->serializer)?serialize($value):call_user_func($this->serializer[0], $value);
 	}
 
 	/**
-	 * @param string $value
-	 * @return mixed
+	 * Unserializes a value retrieved from the database
+	 * @param string $value The serialized value
+	 * @return mixed The unserialized value
 	 */
-	protected function unserialize(string $value) {
+	protected function unserialize(string $value):mixed {
 		return (null === $this->serializer)?unserialize($value, ['allowed_classes' => true]):call_user_func($this->serializer[1], $value);
 	}
 
@@ -176,9 +178,10 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param string $option
-	 * @param string $value
-	 * @return bool
+	 * Inserts or updates an option value in the database
+	 * @param string $option The option name
+	 * @param string $value The serialized value to store
+	 * @return bool True on success, false on database error
 	 */
 	protected function applyDbValue(string $option, string $value):bool {
 		try {
@@ -193,8 +196,9 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param string $option
-	 * @return bool
+	 * Deletes an option from the database
+	 * @param string $option The option name to delete
+	 * @return bool True on success, false on database error
 	 */
 	protected function removeDbValue(string $option):bool {
 		try {
@@ -234,27 +238,29 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * @param string $option
-	 * @param mixed $value
-	 * @return bool
-	 * @throws Exception
+	 * Stores an option value in the database and invalidates cache
+	 * @param string $option The option name to store
+	 * @param mixed $value The value to store (will be serialized)
+	 * @return bool True on success, false on database error
+	 * @throws Exception If option name validation fails
 	 */
 	public function set(string $option, mixed $value):bool {
 		$this->validateOptionName($option);
-		if ($this->cacheEnabled && $this->cache) {
+		if ($this->cacheEnabled) {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $this->applyDbValue($option, $this->serialize($value));
 	}
 
 	/**
-	 * @param string $option
-	 * @return bool
-	 * @throws Exception
+	 * Deletes an option from the database and invalidates cache
+	 * @param string $option The option name to delete
+	 * @return bool True on success, false on database error
+	 * @throws Exception If option name validation fails
 	 */
 	public function drop(string $option):bool {
 		$this->validateOptionName($option);
-		if ($this->cacheEnabled && $this->cache) {
+		if ($this->cacheEnabled) {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $this->removeDbValue($option);
@@ -262,9 +268,9 @@ class SysOptions extends Model {
 
 	/**
 	 * Static call with the same logic as get()
-	 * @param string $option
-	 * @param null $default
-	 * @return mixed (null by default)
+	 * @param string $option The option name
+	 * @param mixed $default Default value to return if option doesn't exist (null by default)
+	 * @return mixed The option value or default if option doesn't exist
 	 * @throws Throwable
 	 */
 	public static function getStatic(string $option, mixed $default = null):mixed {
@@ -273,9 +279,9 @@ class SysOptions extends Model {
 
 	/**
 	 * Static call with the same logic as set()
-	 * @param string $option
-	 * @param mixed $value
-	 * @return bool
+	 * @param string $option The option name
+	 * @param mixed $value The value to store (will be serialized)
+	 * @return bool True on success, false on failure
 	 * @throws Exception
 	 */
 	public static function setStatic(string $option, mixed $value):bool {
@@ -284,8 +290,8 @@ class SysOptions extends Model {
 
 	/**
 	 * Static call with the same logic as drop()
-	 * @param string $option
-	 * @return bool
+	 * @param string $option The option name to delete
+	 * @return bool True on success, false on failure
 	 * @throws Exception
 	 */
 	public static function dropStatic(string $option):bool {
