@@ -7,6 +7,7 @@ use Exception;
 use Throwable;
 use Yii;
 use yii\base\Model;
+use yii\caching\CacheInterface;
 use yii\caching\TagDependency;
 use yii\db\Connection;
 use yii\db\Query;
@@ -16,7 +17,7 @@ use yii\validators\StringValidator;
 
 /**
  * Class SysOptions
- * Хранение системных настроек в БД/кеше
+ * Storage of system settings in DB/cache
  */
 class SysOptions extends Model {
 
@@ -29,6 +30,17 @@ class SysOptions extends Model {
 	public Connection|array|string $db = 'db';
 
 	/**
+	 * @var CacheInterface|array|string|null the cache component for intermediate caching. Can be:
+	 * - string: application component ID (e.g., 'cache', 'redisCache')
+	 * - array: configuration array for creating the cache component
+	 * - CacheInterface: cache object
+	 * - null: use application default cache (Yii::$app->cache), to explicitly disable set $cacheEnabled = false
+	 * After the SysOptions object is created, if you want to change this property, you should only assign it
+	 * with a cache object.
+	 */
+	public CacheInterface|array|string|null $cache = null;
+
+	/**
 	 * @var null|array the functions used to serialize and unserialize values. Defaults to null, meaning
 	 * using the default PHP `serialize()` and `unserialize()` functions. If you want to use some more efficient
 	 * serializer (e.g. [igbinary](https://pecl.php.net/package/igbinary)), you may configure this property with
@@ -36,17 +48,10 @@ class SysOptions extends Model {
 	 * function.
 	 */
 	public null|array $serializer = null;
+
 	/**
-	 * @var bool enable intermediate caching via Yii::$app->cache (must be configured in framework). Default option
-	 * value can be set in module configuration, e.g.
-	 * ...
-	 * 'sysoptions' => [
-	 *        'class' => SysOptionsModule::class,
-	 *            'params' => [
-	 *                'cacheEnabled' => true//defaults to false
-	 *            ]
-	 *        ],
-	 * ...
+	 * @var bool enable intermediate caching. Default value can be set in module configuration.
+	 * If $cache is not configured or null, caching will be automatically disabled regardless of this parameter.
 	 */
 	public bool $cacheEnabled = true;
 
@@ -61,14 +66,30 @@ class SysOptions extends Model {
 		$this->_tableName = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.tableName', $this->_tableName);
 		$this->cacheEnabled = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheEnabled', $this->cacheEnabled);
 
-		if ($this->cacheEnabled && !Yii::$app->cache) {
-			Yii::warning('Кеширование включено, но компонент cache не настроен в приложении. Кеширование отключено.', __METHOD__);
+		// Resolve cache component
+		if (null === $this->cache) {
+			// Backward compatibility: if cache is not specified, use application default cache
+			$this->cache = Yii::$app->cache;
+		} else {
+			// If explicitly specified, resolve via Instance::ensure
+			try {
+				$this->cache = Instance::ensure($this->cache, CacheInterface::class);
+			} catch (Throwable $e) {
+				Yii::warning("Failed to resolve cache component: {$e->getMessage()}. Caching disabled.", __METHOD__);
+				$this->cache = null;
+				$this->cacheEnabled = false;
+			}
+		}
+
+		// If caching is enabled but cache component is missing - disable caching
+		if ($this->cacheEnabled && null === $this->cache) {
+			Yii::warning('Caching is enabled but cache component is not configured. Caching disabled.', __METHOD__);
 			$this->cacheEnabled = false;
 		}
 	}
 
 	/**
-	 * Возвращает имя таблицы, используемой для хранения опций
+	 * Returns the name of the table used for storing options
 	 * @return string
 	 */
 	public function getTableName():string {
@@ -76,7 +97,7 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * Валидация имени опции
+	 * Validates option name
 	 * @param string $option
 	 * @return void
 	 * @throws Exception
@@ -85,8 +106,8 @@ class SysOptions extends Model {
 		$validator = new StringValidator([
 			'min' => 1,
 			'max' => 256,
-			'tooShort' => 'Имя опции не может быть пустым',
-			'tooLong' => 'Имя опции не может превышать 256 символов',
+			'tooShort' => 'Option name cannot be empty',
+			'tooLong' => 'Option name cannot exceed 256 characters',
 		]);
 
 		$error = '';
@@ -167,8 +188,8 @@ class SysOptions extends Model {
 	 */
 	public function get(string $option, mixed $default = null):mixed {
 		$this->validateOptionName($option);
-		$dbValue = ($this->cacheEnabled && Yii::$app->cache)
-			?Yii::$app->cache->getOrSet(
+		$dbValue = ($this->cacheEnabled && $this->cache)
+			?$this->cache->getOrSet(
 				static::class."::get({$option})",
 				fn() => $this->retrieveDbValue($option),
 				null,
@@ -186,8 +207,8 @@ class SysOptions extends Model {
 	 */
 	public function set(string $option, mixed $value):bool {
 		$this->validateOptionName($option);
-		if ($this->cacheEnabled && Yii::$app->cache) {
-			TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		if ($this->cacheEnabled && $this->cache) {
+			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $this->applyDbValue($option, $this->serialize($value));
 	}
@@ -199,14 +220,14 @@ class SysOptions extends Model {
 	 */
 	public function drop(string $option):bool {
 		$this->validateOptionName($option);
-		if ($this->cacheEnabled && Yii::$app->cache) {
-			TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
+		if ($this->cacheEnabled && $this->cache) {
+			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $this->removeDbValue($option);
 	}
 
 	/**
-	 * Статический вызов с той же логикой, что у get()
+	 * Static call with the same logic as get()
 	 * @param string $option
 	 * @param null $default
 	 * @return mixed (null by default)
@@ -217,7 +238,7 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * Статический вызов с той же логикой, что у set()
+	 * Static call with the same logic as set()
 	 * @param string $option
 	 * @param mixed $value
 	 * @return bool
@@ -228,7 +249,7 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * Статический вызов с той же логикой, что у drop()
+	 * Static call with the same logic as drop()
 	 * @param string $option
 	 * @return bool
 	 * @throws Exception
