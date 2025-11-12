@@ -12,6 +12,7 @@ use yii\db\Connection;
 use yii\db\Query;
 use yii\di\Instance;
 use yii\helpers\ArrayHelper;
+use yii\validators\StringValidator;
 
 /**
  * Class SysOptions
@@ -67,6 +68,26 @@ class SysOptions extends Model {
 	 */
 	public function getTableName():string {
 		return $this->_tableName;
+	}
+
+	/**
+	 * Валидация имени опции
+	 * @param string $option
+	 * @return void
+	 * @throws Exception
+	 */
+	private function validateOptionName(string $option):void {
+		$validator = new StringValidator([
+			'min' => 1,
+			'max' => 256,
+			'tooShort' => 'Имя опции не может быть пустым',
+			'tooLong' => 'Имя опции не может превышать 256 символов',
+		]);
+
+		$error = '';
+		if (!$validator->validate($option, $error)) {
+			throw new Exception($error);
+		}
 	}
 
 	/**
@@ -140,6 +161,7 @@ class SysOptions extends Model {
 	 * @throws Exception
 	 */
 	public function get(string $option, mixed $default = null):mixed {
+		$this->validateOptionName($option);
 		$dbValue = ($this->cacheEnabled)
 			?Yii::$app->cache->getOrSet(
 				static::class."::get({$option})",
@@ -155,8 +177,10 @@ class SysOptions extends Model {
 	 * @param string $option
 	 * @param mixed $value
 	 * @return bool
+	 * @throws Exception
 	 */
 	public function set(string $option, mixed $value):bool {
+		$this->validateOptionName($option);
 		TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
 		return $this->applyDbValue($option, $this->serialize($value));
 	}
@@ -164,8 +188,10 @@ class SysOptions extends Model {
 	/**
 	 * @param string $option
 	 * @return bool
+	 * @throws Exception
 	 */
 	public function drop(string $option):bool {
+		$this->validateOptionName($option);
 		TagDependency::invalidate(Yii::$app->cache, [static::class."::get({$option})"]);
 		return $this->removeDbValue($option);
 	}
@@ -186,6 +212,7 @@ class SysOptions extends Model {
 	 * @param string $option
 	 * @param mixed $value
 	 * @return bool
+	 * @throws Exception
 	 */
 	public static function setStatic(string $option, mixed $value):bool {
 		return (new self())->set($option, $value);
@@ -195,6 +222,7 @@ class SysOptions extends Model {
 	 * Статический вызов с той же логикой, что у drop()
 	 * @param string $option
 	 * @return bool
+	 * @throws Exception
 	 */
 	public static function dropStatic(string $option):bool {
 		return (new self())->drop($option);
