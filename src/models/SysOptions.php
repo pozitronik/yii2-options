@@ -313,10 +313,11 @@ class SysOptions extends Model {
 	 */
 	public function set(string $option, mixed $value):bool {
 		$this->validateOptionName($option);
-		if ($this->cacheEnabled) {
+		$result = $this->applyDbValue($option, $this->serialize($value));
+		if ($result && $this->cacheEnabled) {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
-		return $this->applyDbValue($option, $this->serialize($value));
+		return $result;
 	}
 
 	/**
@@ -327,10 +328,11 @@ class SysOptions extends Model {
 	 */
 	public function drop(string $option):bool {
 		$this->validateOptionName($option);
-		if ($this->cacheEnabled) {
+		$result = $this->removeDbValue($option);
+		if ($result && $this->cacheEnabled) {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
-		return $this->removeDbValue($option);
+		return $result;
 	}
 
 	/**
