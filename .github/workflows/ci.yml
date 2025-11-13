@@ -69,6 +69,14 @@ jobs:
         run: cp tests/.env.example tests/.env
 
       - name: Run tests
-        run: vendor/bin/codecept run
+        run: vendor/bin/codecept run --coverage --coverage-xml
         env:
           COMPOSER_TOKEN: ${{ secrets.COMPOSER_GITHUB_TOKEN }}
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./tests/_output/coverage.xml
+          fail_ci_if_error: false
+          verbose: true
