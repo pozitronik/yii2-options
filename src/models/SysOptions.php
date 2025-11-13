@@ -56,6 +56,20 @@ class SysOptions extends Model {
 	public bool $cacheEnabled = true;
 
 	/**
+	 * @var int|null Cache duration for options in seconds. Defaults to null (infinite caching).
+	 * Value can be set in module configuration.
+	 *
+	 * Possible values:
+	 * - null (default): infinite caching (current behavior, backward compatibility)
+	 * - 0: cache not used (equivalent to $cacheEnabled = false)
+	 * - positive number: cache lifetime in seconds (e.g., 3600 for 1 hour)
+	 *
+	 * NOTE: cache is also invalidated via TagDependency when set() or drop() is called,
+	 * regardless of $cacheDuration value. TTL serves as an additional safety measure.
+	 */
+	public ?int $cacheDuration = null;
+
+	/**
 	 * @var array|bool Defines which classes are allowed for unserialization
 	 *
 	 * Possible values:
@@ -82,6 +96,7 @@ class SysOptions extends Model {
 		$this->db = Instance::ensure($this->db, Connection::class);
 		$this->_tableName = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.tableName', $this->_tableName);
 		$this->cacheEnabled = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheEnabled', $this->cacheEnabled);
+		$this->cacheDuration = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheDuration', $this->cacheDuration);
 
 		// Validate serializer configuration
 		if (null !== $this->serializer) {
@@ -118,6 +133,11 @@ class SysOptions extends Model {
 				'SysOptions is using allowedClasses=true (allows all classes). For improved security, consider using false or a whitelist of specific classes.',
 				__METHOD__
 			);
+		}
+
+		// Validate cacheDuration configuration
+		if (null !== $this->cacheDuration && (!is_int($this->cacheDuration) || $this->cacheDuration < 0)) {
+			throw new Exception('cacheDuration must be null or a non-negative integer (seconds)');
 		}
 
 		// Resolve cache component
@@ -293,7 +313,7 @@ class SysOptions extends Model {
 
 		if ($this->cacheEnabled) { // Try to get from cache first, else retrieve from DB
 			if ((false === $dbValue = $this->cache->get($cacheKey)) && null !== $dbValue = $this->retrieveDbValue($option)) {
-				$this->cache->set($cacheKey, $dbValue, null, new TagDependency(['tags' => static::class."::get({$option})"]));
+				$this->cache->set($cacheKey, $dbValue, $this->cacheDuration, new TagDependency(['tags' => static::class."::get({$option})"]));
 			}
 		} else { // No cache - retrieve directly
 			$dbValue = $this->retrieveDbValue($option);
