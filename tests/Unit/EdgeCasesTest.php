@@ -13,9 +13,7 @@ use Tests\Support\UnitTester;
 use Throwable;
 use Yii;
 use yii\base\Exception as BaseException;
-use yii\base\InvalidRouteException;
 use yii\caching\FileCache;
-use yii\console\Exception as ConsoleExceptions;
 use yii\db\Exception as DbException;
 
 /**
@@ -71,8 +69,7 @@ class EdgeCasesTest extends Unit {
 		$nonExistent = $options->get('never_set', 'default_for_nonexistent');
 
 		// After fix: null should return null, non-existent should return default
-		static::assertNotEquals($nullValue, $nonExistent,
-			'Explicitly set null should differ from non-existent option');
+		static::assertNotEquals($nullValue, $nonExistent, 'Explicitly set null should differ from non-existent option');
 	}
 
 	/**
@@ -102,13 +99,11 @@ class EdgeCasesTest extends Unit {
 
 		// Read again - should return updated value from DB, not from cache
 		$value2 = $options->get('cached_option');
-		static::assertEquals('updated_value', $value2,
-			'After update should return new value, not cached old one');
+		static::assertEquals('updated_value', $value2, 'After update should return new value, not cached old one');
 	}
 
 	/**
 	 * Verify operation with missing cache component
-	 * Problem: no null check for Yii::$app->cache
 	 * @return void
 	 * @throws BaseException
 	 */
@@ -117,12 +112,33 @@ class EdgeCasesTest extends Unit {
 		Yii::$app->set('cache', null);
 
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
-		// These operations should not throw exceptions
+		// Caching should be automatically disabled during initialization
+		static::assertFalse($options->cacheEnabled, 'Caching should be disabled when cache component is null');
+
+		// These operations should work without exceptions (caching disabled)
 		static::assertTrue($options->set('test_option', 'test_value'));
 		static::assertEquals('test_value', $options->get('test_option'));
 		static::assertTrue($options->drop('test_option'));
+	}
+
+	/**
+	 * Verify that manually enabling cache when component is null throws exception
+	 * @return void
+	 * @throws BaseException
+	 */
+	public function testManuallyEnablingCacheWithNullComponentThrowsException():void {
+		// Remove cache component
+		Yii::$app->set('cache', null);
+
+		$options = new SysOptions();
+
+		// Manually override cacheEnabled (user shooting their own leg)
+		$options->cacheEnabled = true;
+
+		// Should throw exception when trying to use cache operations
+		$this->expectException(Throwable::class);
+		$options->set('test_option', 'test_value');
 	}
 
 	/**
