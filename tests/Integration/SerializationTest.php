@@ -154,6 +154,19 @@ class SerializationTest extends Unit {
 	}
 
 	/**
+	 * Verify allowedClasses array with non-string elements throws exception
+	 *
+	 * When allowedClasses is an array, all elements must be valid class name strings.
+	 */
+	public function testAllowedClassesArrayWithNonStringElements():void {
+		$this->expectException(Exception::class);
+		$this->expectExceptionMessage('All elements in allowedClasses array must be valid class name strings');
+
+		// Array with non-string element (integer)
+		new SysOptions(['allowedClasses' => ['ValidClass', 123, 'AnotherClass']]);
+	}
+
+	/**
 	 * Verify custom serializer ignores allowedClasses
 	 *
 	 * @throws Exception

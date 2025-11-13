@@ -90,4 +90,60 @@ class ErrorHandlingTest extends Unit {
 		$result = $options->drop('test_option');
 		static::assertFalse($result, 'On DB error drop() should return false');
 	}
+
+	/**
+	 * Verify retrieveOptions() handles database errors gracefully
+	 *
+	 * When database query fails, should return empty array instead of throwing exception.
+	 *
+	 * @throws DbException
+	 */
+	public function testRetrieveOptionsHandlesDatabaseError():void {
+		$options = new SysOptions();
+
+		// Drop table to simulate database error
+		Yii::$app->db->createCommand('DROP TABLE sys_options')->execute();
+
+		// Should return empty array instead of throwing exception
+		$result = $options->retrieveOptions();
+		static::assertIsArray($result);
+		static::assertEmpty($result);
+	}
+
+	/**
+	 * Verify getAllNames() handles database errors gracefully
+	 *
+	 * When database query fails, should return empty array instead of throwing exception.
+	 *
+	 * @throws DbException
+	 */
+	public function testGetAllNamesHandlesDatabaseError():void {
+		$options = new SysOptions();
+
+		// Drop table to simulate database error
+		Yii::$app->db->createCommand('DROP TABLE sys_options')->execute();
+
+		// Should return empty array instead of throwing exception
+		$result = $options->getAllNames();
+		static::assertIsArray($result);
+		static::assertEmpty($result);
+	}
+
+	/**
+	 * Verify clear() handles database errors gracefully
+	 *
+	 * When database delete operation fails, should return false instead of throwing exception.
+	 *
+	 * @throws DbException
+	 */
+	public function testClearHandlesDatabaseError():void {
+		$options = new SysOptions();
+
+		// Drop table to simulate database error
+		Yii::$app->db->createCommand('DROP TABLE sys_options')->execute();
+
+		// Should return false instead of throwing exception
+		$result = $options->clear();
+		static::assertFalse($result);
+	}
 }

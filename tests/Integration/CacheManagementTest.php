@@ -109,6 +109,30 @@ class CacheManagementTest extends Unit {
 	}
 
 	/**
+	 * Verify cache component resolution failure disables caching gracefully
+	 *
+	 * When cache component string reference cannot be resolved (e.g., non-existent component),
+	 * caching should be automatically disabled with warning logged.
+	 *
+	 * @throws BaseException
+	 */
+	public function testCacheComponentResolutionFailure():void {
+		// Set cache to null
+		Yii::$app->set('cache', null);
+
+		// Create options with explicit cache component reference that doesn't exist
+		$options = new SysOptions(['cache' => 'nonexistent_cache_component']);
+
+		// Caching should be automatically disabled
+		static::assertFalse($options->cacheEnabled, 'Caching should be disabled when cache component resolution fails');
+		static::assertNull($options->cache, 'Cache property should be null after resolution failure');
+
+		// Operations should still work without cache
+		static::assertTrue($options->set('test_option', 'test_value'));
+		static::assertEquals('test_value', $options->get('test_option'));
+	}
+
+	/**
 	 * Verify cache disabled via instance configuration
 	 *
 	 * @throws BaseException
