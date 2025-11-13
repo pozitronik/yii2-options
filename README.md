@@ -1,6 +1,10 @@
 # yii2-options
 
-[![Build Status](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml/badge.svg)](https://github.com/pozitronik/yii2-options/actions)
+[![Tests](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml/badge.svg)](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/pozitronik/yii2-options/branch/master/graph/badge.svg)](https://codecov.io/gh/pozitronik/yii2-options)
+[![Packagist Version](https://img.shields.io/packagist/v/pozitronik/yii2-options)](https://packagist.org/packages/pozitronik/yii2-options)
+[![Packagist License](https://img.shields.io/packagist/l/pozitronik/yii2-options)](https://packagist.org/packages/pozitronik/yii2-options)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/pozitronik/yii2-options)](https://packagist.org/packages/pozitronik/yii2-options)
 
 Server-side key-value options storage for Yii2 applications.
 
