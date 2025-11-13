@@ -232,8 +232,8 @@ class SysOptions extends Model {
 				/** @noinspection OffsetOperationsInspection There's no way to explain EA Extended that it's a proper structure */
 				$value = $row['value'];
 				if (is_resource($value) && 'stream' === get_resource_type($value)) {
-					$result = stream_get_contents($value);
-					fseek($value, 0);
+					$result = stream_get_contents($value, null, 0);
+					fclose($value); // We don't have to close stream, since PHP handles it well, but it is a good practice to do it
 					return $result;
 				}
 				return $value;
