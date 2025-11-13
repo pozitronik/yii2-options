@@ -1,41 +1,51 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use pozitronik\sys_options\models\SysOptions;
+use Random\RandomException;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use Throwable;
 use Yii;
 use yii\base\Application;
 use yii\base\Exception as BaseException;
+use yii\base\InvalidRouteException;
+use yii\console\Exception;
 
 /**
+ * Basic CRUD operations integration tests
  *
+ * Tests core functionality: get, set, drop operations with database persistence
+ * for various data types (string, int, float, array) using both instance and static methods.
  */
-class MainTest extends Unit {
+class BasicOperationsTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidRouteException
+	 * @throws Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
 	}
 
 	/**
-	 * @return void
+	 * Verify Yii application is properly initialized
 	 */
-	public function testSomeFeature():void {
+	public function testApplicationInitialized():void {
 		$this->tester->assertInstanceOf(Application::class, Yii::$app);
 	}
 
 	/**
-	 * @return void
+	 * Test set and get operations with various data types
+	 *
 	 * @throws BaseException
+	 * @throws RandomException
 	 */
 	public function testGetSet():void {
 		$options = new SysOptions();
@@ -62,7 +72,8 @@ class MainTest extends Unit {
 	}
 
 	/**
-	 * @return void
+	 * Test static set and get operations with various data types
+	 *
 	 * @throws Throwable
 	 * @throws BaseException
 	 */
@@ -90,7 +101,8 @@ class MainTest extends Unit {
 	}
 
 	/**
-	 * @return void
+	 * Test drop operation removes stored values
+	 *
 	 * @throws BaseException
 	 * @throws Throwable
 	 */
@@ -129,7 +141,8 @@ class MainTest extends Unit {
 	}
 
 	/**
-	 * @return void
+	 * Test static drop operation removes stored values
+	 *
 	 * @throws BaseException
 	 * @throws Throwable
 	 */

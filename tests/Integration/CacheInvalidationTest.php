@@ -1,25 +1,33 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use Yii;
+use yii\base\InvalidConfigException;
+use yii\base\InvalidRouteException;
 use yii\caching\FileCache;
 
 /**
- * Tests for cache invalidation race conditions (Issues #3 and #4)
+ * Cache invalidation timing tests
+ *
+ * Verifies correct order of operations: database write/delete happens BEFORE cache invalidation
+ * to prevent race conditions where cache is cleared before database is updated.
  */
-class CacheInvalidationRaceConditionTest extends Unit {
+class CacheInvalidationTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws InvalidRouteException
+	 * @throws \yii\console\Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
@@ -31,16 +39,12 @@ class CacheInvalidationRaceConditionTest extends Unit {
 	}
 
 	/**
-	 * Test Issue #3: Cache should be invalidated AFTER successful DB write in set()
+	 * Verify cache invalidation happens AFTER successful database write in set()
 	 *
 	 * Expected behavior:
 	 * 1. applyDbValue() is called FIRST
 	 * 2. If it succeeds, THEN TagDependency::invalidate() is called
 	 * 3. If applyDbValue() fails, cache is NOT invalidated
-	 *
-	 * This test will FAIL with current implementation and PASS after fix.
-	 *
-	 * @return void
 	 */
 	public function testSetInvalidatesCacheAfterSuccessfulDbWrite():void {
 		// Read the actual source code to verify correct behavior
@@ -68,16 +72,12 @@ class CacheInvalidationRaceConditionTest extends Unit {
 	}
 
 	/**
-	 * Test Issue #4: Cache should be invalidated AFTER successful DB delete in drop()
+	 * Verify cache invalidation happens AFTER successful database delete in drop()
 	 *
 	 * Expected behavior:
 	 * 1. removeDbValue() is called FIRST
 	 * 2. If it succeeds, THEN TagDependency::invalidate() is called
 	 * 3. If removeDbValue() fails, cache is NOT invalidated
-	 *
-	 * This test will FAIL with current implementation and PASS after fix.
-	 *
-	 * @return void
 	 */
 	public function testDropInvalidatesCacheAfterSuccessfulDbDelete():void {
 		// Read the actual source code to verify correct behavior
@@ -105,10 +105,8 @@ class CacheInvalidationRaceConditionTest extends Unit {
 	}
 
 	/**
-	 * Test that successful set() does invalidate cache
-	 * This verifies that after the fix, cache invalidation still works
+	 * Verify successful set() actually invalidates cache
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testSuccessfulSetInvalidatesCache():void {
@@ -130,10 +128,8 @@ class CacheInvalidationRaceConditionTest extends Unit {
 	}
 
 	/**
-	 * Test that successful drop() does invalidate cache
-	 * This verifies that after the fix, cache invalidation still works
+	 * Verify successful drop() actually invalidates cache
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testSuccessfulDropInvalidatesCache():void {

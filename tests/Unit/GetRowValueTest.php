@@ -6,14 +6,16 @@ namespace Tests\Unit;
 use Codeception\Test\Unit;
 use pozitronik\sys_options\models\SysOptions;
 use ReflectionClass;
+use ReflectionException;
 use ReflectionMethod;
 use Tests\Support\UnitTester;
 
 /**
- * Tests for getRowValue() private static method
+ * PostgreSQL resource stream handling tests
  *
- * Tests PostgreSQL resource stream handling.
- * Method always returns string (serialized data from database).
+ * Unit tests for getRowValue() private static method using reflection.
+ * This method handles PostgreSQL bytea columns that are returned as resource streams,
+ * always returning string (serialized data from database).
  */
 class GetRowValueTest extends Unit {
 
@@ -22,20 +24,18 @@ class GetRowValueTest extends Unit {
 	private ReflectionMethod $method;
 
 	/**
-	 * @Override
+	 * @return void
 	 */
 	protected function _before():void {
 		// Get access to private static method via reflection
 		$reflection = new ReflectionClass(SysOptions::class);
 		$this->method = $reflection->getMethod('getRowValue');
-		$this->method->setAccessible(true);
 	}
 
 	/**
-	 * Test getRowValue() with regular string value (typical case)
+	 * Verify getRowValue() handles regular string value (typical case)
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithRegularString():void {
 		$serialized = serialize('test_value');
@@ -47,10 +47,9 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with serialized array
+	 * Verify getRowValue() handles serialized array
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithSerializedArray():void {
 		$serialized = serialize(['key' => 'value', 'number' => 42]);
@@ -62,10 +61,9 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with serialized null
+	 * Verify getRowValue() handles serialized null
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithSerializedNull():void {
 		$serialized = serialize(null);
@@ -78,10 +76,9 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with empty string
+	 * Verify getRowValue() handles empty string
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithEmptyString():void {
 		$row = ['value' => ''];
@@ -92,12 +89,11 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with simulated PostgreSQL resource stream
+	 * Verify getRowValue() handles simulated PostgreSQL resource stream
 	 *
 	 * PostgreSQL returns bytea columns as resource streams.
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithResourceStream():void {
 		// Create a stream resource to simulate PostgreSQL behavior
@@ -117,10 +113,9 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with binary data in stream
+	 * Verify getRowValue() handles binary data in stream
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithBinaryDataInStream():void {
 		// Simulate binary serialized data
@@ -139,10 +134,9 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with large data in stream
+	 * Verify getRowValue() handles large data in stream
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithLargeStreamData():void {
 		// Create large serialized data
@@ -164,10 +158,9 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() with empty stream
+	 * Verify getRowValue() handles empty stream
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueWithEmptyStream():void {
 		$stream = fopen('php://memory', 'rb+');
@@ -183,12 +176,11 @@ class GetRowValueTest extends Unit {
 	}
 
 	/**
-	 * Test getRowValue() reads from stream beginning regardless of position
+	 * Verify getRowValue() reads from stream beginning regardless of position
 	 *
 	 * Uses offset=0 in stream_get_contents() to always read from start.
 	 *
-	 * @return void
-	 * @throws \ReflectionException
+	 * @throws ReflectionException
 	 */
 	public function testGetRowValueReadsFromStreamBeginning():void {
 		$content = serialize('complete_data');

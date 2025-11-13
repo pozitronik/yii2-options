@@ -1,0 +1,12 @@
+# Codeception Test Suite Configuration
+#
+# Suite for integration tests - tests with external dependencies (DB, cache, components)
+
+actor: IntegrationTester
+modules:
+  enabled:
+    - Asserts
+    - Db
+    - Yii2:
+        configFile: 'tests/_app/config/main.php'
+step_decorators: ~

@@ -1,29 +1,34 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use Yii;
+use yii\base\InvalidConfigException;
+use yii\base\InvalidRouteException;
 use yii\caching\FileCache;
 use yii\caching\TagDependency;
 
 /**
- * Tests for Issue #29: No Unit Tests for Caching Behavior with TagDependency
+ * TagDependency caching behavior tests
  *
- * Comprehensive tests for cache behavior with real cache backend (FileCache)
- * focusing on TagDependency invalidation patterns.
+ * Verifies cache persistence, invalidation, and tag-based selective clearing
+ * using real cache backend (FileCache).
  */
-class TagDependencyCachingTest extends Unit {
+class TagDependencyTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws InvalidRouteException
+	 * @throws \yii\console\Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
@@ -35,9 +40,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that cache is populated on first get() and reused on subsequent calls
+	 * Verify cache is populated on first get() and reused on subsequent calls
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCachePersistenceAcrossMultipleGets():void {
@@ -66,11 +70,10 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that TagDependency invalidation is scoped to specific option
+	 * Verify TagDependency invalidation is scoped to specific option
 	 *
 	 * Invalidating cache for option1 should NOT invalidate cache for option2
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testTagInvalidationScopedToSpecificOption():void {
@@ -108,9 +111,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test tag invalidation across multiple options with mass updates
+	 * Verify tag invalidation across multiple options with mass updates
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testTagInvalidationWithMultipleOptions():void {
@@ -154,9 +156,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that drop() invalidates cache with TagDependency
+	 * Verify drop() invalidates cache with TagDependency
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testDropInvalidatesCacheWithTagDependency():void {
@@ -183,9 +184,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that multiple instances share the same cache via TagDependency
+	 * Verify multiple instances share the same cache via TagDependency
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testMultipleInstancesShareCache():void {
@@ -212,9 +212,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that cache invalidation works correctly with null values
+	 * Verify cache invalidation works correctly with null values
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCacheInvalidationWithNullValues():void {
@@ -240,11 +239,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test cache behavior with non-existent options (default values)
+	 * Verify non-existent options are NOT cached (only DB values are cached)
 	 *
-	 * Non-existent options should NOT be cached (only DB values are cached)
-	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testNonExistentOptionsNotCached():void {
@@ -271,9 +267,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that manual TagDependency invalidation works
+	 * Verify manual TagDependency invalidation works
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testManualTagDependencyInvalidation():void {
@@ -300,9 +295,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test cache behavior when switching caching on/off
+	 * Verify cache behavior when switching caching on/off
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCacheBehaviorWithToggledCaching():void {
@@ -339,9 +333,8 @@ class TagDependencyCachingTest extends Unit {
 	}
 
 	/**
-	 * Test that cache keys are properly formatted and unique per option
+	 * Verify cache keys are properly formatted and unique per option
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCacheKeyUniqueness():void {

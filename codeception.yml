@@ -24,3 +24,12 @@ params:
 extensions:
   enabled:
     - Codeception\Extension\RunFailed
+coverage:
+  enabled: true
+  include:
+    - src/**/*.php
+  exclude:
+    - vendor/**/*
+    - tests/**/*
+  low_limit: 70
+  high_limit: 90

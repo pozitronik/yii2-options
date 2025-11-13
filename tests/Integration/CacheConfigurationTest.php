@@ -1,30 +1,35 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use Throwable;
 use TypeError;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\base\InvalidRouteException;
 use yii\caching\FileCache;
 
 /**
- * Tests for Issue #15: No Cache TTL Configuration
+ * Cache configuration tests
  *
- * Verifies that cacheDuration parameter works correctly with various values.
+ * Verifies cacheDuration parameter works correctly with various values
+ * and TagDependency invalidation works independently of TTL settings.
  */
-class CacheDurationTest extends Unit {
+class CacheConfigurationTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws InvalidRouteException
+	 * @throws \yii\console\Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
@@ -36,9 +41,8 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test default cacheDuration is null (infinite caching - backward compatibility)
+	 * Verify default cacheDuration is null (infinite caching - backward compatibility)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testDefaultCacheDurationIsNull():void {
@@ -47,9 +51,8 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test infinite caching with cacheDuration = null (default behavior)
+	 * Verify infinite caching with cacheDuration = null (default behavior)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testInfiniteCachingWithNullDuration():void {
@@ -68,9 +71,8 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test cacheDuration with positive integer (TTL in seconds)
+	 * Verify cacheDuration with positive integer (TTL in seconds)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCacheDurationWithPositiveInteger():void {
@@ -89,9 +91,8 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test cacheDuration = 0 (effectively no caching, but doesn't disable cacheEnabled)
+	 * Verify cacheDuration = 0 (effectively no caching, but doesn't disable cacheEnabled)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCacheDurationZero():void {
@@ -108,9 +109,7 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test invalid cacheDuration (negative integer) throws exception
-	 *
-	 * @return void
+	 * Verify invalid cacheDuration (negative integer) throws exception
 	 */
 	public function testInvalidCacheDurationNegativeThrowsException():void {
 		$this->expectException(Exception::class);
@@ -122,12 +121,10 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test invalid cacheDuration (non-integer) throws TypeError due to strict typing in PHP 8.4
+	 * Verify invalid cacheDuration (non-integer) throws TypeError due to strict typing in PHP 8.4
 	 *
 	 * PHP 8.4's strict property typing prevents assigning non-integer to ?int property.
 	 * This is caught by the type system before our validation code runs.
-	 *
-	 * @return void
 	 */
 	public function testInvalidCacheDurationNonIntegerThrowsTypeError():void {
 		$this->expectException(TypeError::class);
@@ -138,11 +135,10 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test that TagDependency invalidation works independently of cacheDuration
+	 * Verify TagDependency invalidation works independently of cacheDuration
 	 *
 	 * Even with long cacheDuration, set() should invalidate cache immediately.
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testTagDependencyInvalidationWorksWithCacheDuration():void {
@@ -165,9 +161,8 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test that drop() invalidates cache independently of cacheDuration
+	 * Verify drop() invalidates cache independently of cacheDuration
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testDropInvalidatesCacheWithCacheDuration():void {
@@ -190,9 +185,8 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test cacheDuration with component configuration (static methods)
+	 * Verify cacheDuration with component configuration (static methods)
 	 *
-	 * @return void
 	 * @throws Throwable
 	 * @throws InvalidConfigException
 	 */
@@ -213,12 +207,11 @@ class CacheDurationTest extends Unit {
 	}
 
 	/**
-	 * Test that cacheDuration doesn't affect behavior when caching is disabled
+	 * Verify cacheDuration doesn't affect behavior when caching is disabled
 	 *
 	 * When cacheEnabled=false, get() method should always read from database,
 	 * regardless of cacheDuration value.
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testCacheDurationIgnoredWhenCachingDisabled():void {

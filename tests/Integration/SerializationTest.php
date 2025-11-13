@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use DateTime;
@@ -9,27 +9,32 @@ use Exception;
 use pozitronik\sys_options\models\SysOptions;
 use stdClass;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use TypeError;
 use Yii;
+use yii\base\InvalidRouteException;
 
 /**
- * Serialization security tests (Issue #5)
+ * Serialization security and functionality tests
+ *
+ * Tests allowedClasses parameter for unserialization security,
+ * custom serializers, and data type handling.
  */
-class SerializationSecurityTest extends Unit {
+class SerializationTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidRouteException
+	 * @throws \yii\console\Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
 	}
 
 	/**
-	 * Test: Default value of allowedClasses should be true (backward compatibility)
-	 * @return void
+	 * Verify default value of allowedClasses is true (backward compatibility)
 	 */
 	public function testDefaultAllowedClassesIsTrue():void {
 		$options = new SysOptions();
@@ -37,8 +42,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: Primitive types can be stored with allowedClasses=false
-	 * @return void
+	 * Verify primitive types can be stored with allowedClasses=false
+	 *
 	 * @throws Exception
 	 */
 	public function testPrimitiveTypesWithAllowedClassesFalse():void {
@@ -62,8 +67,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: With allowedClasses=false stdClass is NOT allowed (no classes allowed)
-	 * @return void
+	 * Verify with allowedClasses=false stdClass is NOT allowed (no classes allowed)
+	 *
 	 * @throws Exception
 	 */
 	public function testNoClassesAllowedWithFalse():void {
@@ -82,8 +87,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: With allowedClasses=false custom classes are blocked (returns __PHP_Incomplete_Class)
-	 * @return void
+	 * Verify with allowedClasses=false custom classes are blocked (returns __PHP_Incomplete_Class)
+	 *
 	 * @throws Exception
 	 */
 	public function testCustomClassDisallowedWithAllowedClassesFalse():void {
@@ -104,8 +109,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: With allowedClasses=[ClassName::class] only specified class is allowed
-	 * @return void
+	 * Verify with allowedClasses=[ClassName::class] only specified class is allowed
+	 *
 	 * @throws Exception
 	 */
 	public function testWhitelistAllowedClasses():void {
@@ -121,8 +126,7 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: allowedClasses=true logs info message
-	 * @return void
+	 * Verify allowedClasses=true logs info message
 	 */
 	public function testAllowedClassesTrueLogsInfo():void {
 		// Create new instance with allowedClasses=true (default)
@@ -137,9 +141,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: Invalid allowedClasses configuration (not bool and not array)
+	 * Verify invalid allowedClasses configuration (not bool and not array)
 	 * PHP's strict typing throws TypeError
-	 * @return void
 	 */
 	public function testInvalidAllowedClassesType():void {
 		$this->expectException(TypeError::class);
@@ -151,8 +154,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: Custom serializer ignores allowedClasses
-	 * @return void
+	 * Verify custom serializer ignores allowedClasses
+	 *
 	 * @throws Exception
 	 */
 	public function testCustomSerializerIgnoresAllowedClasses():void {
@@ -176,8 +179,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: Corrupted serialized data throws exception
-	 * @return void
+	 * Verify corrupted serialized data throws exception
+	 *
 	 * @throws \yii\db\Exception
 	 */
 	public function testCorruptedSerializedDataThrowsException():void {
@@ -196,8 +199,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: Serialized false is handled correctly
-	 * @return void
+	 * Verify serialized false is handled correctly
+	 *
 	 * @throws Exception
 	 */
 	public function testSerializedFalseHandledCorrectly():void {
@@ -212,8 +215,8 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: allowedClasses=true works with any classes (backward compatibility)
-	 * @return void
+	 * Verify allowedClasses=true works with any classes (backward compatibility)
+	 *
 	 * @throws Exception
 	 */
 	public function testBackwardCompatibilityWithAllowedClassesTrue():void {

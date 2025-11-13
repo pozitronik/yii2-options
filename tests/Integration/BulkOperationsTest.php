@@ -1,27 +1,32 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use Yii;
+use yii\base\InvalidConfigException;
+use yii\base\InvalidRouteException;
 use yii\caching\FileCache;
 
 /**
- * Tests for Issues #22, #23, #26: Bulk operation methods
+ * Bulk operation methods tests
  *
  * Tests for retrieveOptions(), getAllNames(), getByPattern(), and clear() methods.
  */
 class BulkOperationsTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws InvalidRouteException
+	 * @throws \yii\console\Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
@@ -33,9 +38,7 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test retrieveOptions() returns empty array when no options exist
-	 *
-	 * @return void
+	 * Verify retrieveOptions() returns empty array when no options exist
 	 */
 	public function testRetrieveOptionsReturnsEmptyArrayWhenNoOptions():void {
 		$options = new SysOptions();
@@ -46,9 +49,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test retrieveOptions() returns all stored options
+	 * Verify retrieveOptions() returns all stored options
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testRetrieveOptionsReturnsAllStoredOptions():void {
@@ -76,9 +78,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test retrieveOptions() returns options as associative array with correct keys
+	 * Verify retrieveOptions() returns options as associative array with correct keys
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testRetrieveOptionsReturnsAssociativeArrayWithCorrectKeys():void {
@@ -100,9 +101,7 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test getAllNames() returns empty array when no options exist
-	 *
-	 * @return void
+	 * Verify getAllNames() returns empty array when no options exist
 	 */
 	public function testGetAllNamesReturnsEmptyArrayWhenNoOptions():void {
 		$options = new SysOptions();
@@ -113,9 +112,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test getAllNames() returns only option names without values
+	 * Verify getAllNames() returns only option names without values
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testGetAllNamesReturnsOnlyOptionNames():void {
@@ -142,9 +140,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test getByPattern() with prefix pattern (app.%)
+	 * Verify getByPattern() with prefix pattern (app.%)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testGetByPatternWithPrefixWildcard():void {
@@ -174,9 +171,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test getByPattern() with contains pattern (%config%)
+	 * Verify getByPattern() with contains pattern (%config%)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testGetByPatternWithContainsWildcard():void {
@@ -203,9 +199,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test getByPattern() with single character wildcard (_)
+	 * Verify getByPattern() with single character wildcard (_)
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testGetByPatternWithSingleCharacterWildcard():void {
@@ -229,9 +224,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test getByPattern() returns empty array when no matches
+	 * Verify getByPattern() returns empty array when no matches
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testGetByPatternReturnsEmptyArrayWhenNoMatches():void {
@@ -248,9 +242,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test clear() deletes all options
+	 * Verify clear() deletes all options
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testClearDeletesAllOptions():void {
@@ -278,9 +271,7 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test clear() on empty table returns true
-	 *
-	 * @return void
+	 * Verify clear() on empty table returns true
 	 */
 	public function testClearOnEmptyTableReturnsTrue():void {
 		$options = new SysOptions();
@@ -291,12 +282,11 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test clear() flushes cache when caching is enabled
+	 * Verify clear() invalidates cache when caching is enabled
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
-	public function testClearFlushesCache():void {
+	public function testClearInvalidatesCache():void {
 		$options = new SysOptions();
 		$options->cacheEnabled = true;
 
@@ -309,17 +299,17 @@ class BulkOperationsTest extends Unit {
 		static::assertEquals('value2', $options->get('option2'));
 
 		// Verify cache contains values
-		$cacheKey1 = \pozitronik\sys_options\models\SysOptions::class . "::get(option1)";
-		$cacheKey2 = \pozitronik\sys_options\models\SysOptions::class . "::get(option2)";
-		static::assertNotFalse(\Yii::$app->cache->get($cacheKey1), 'option1 should be cached before clear');
-		static::assertNotFalse(\Yii::$app->cache->get($cacheKey2), 'option2 should be cached before clear');
+		$cacheKey1 = SysOptions::class . "::get(option1)";
+		$cacheKey2 = SysOptions::class . "::get(option2)";
+		static::assertNotFalse(Yii::$app->cache->get($cacheKey1), 'option1 should be cached before clear');
+		static::assertNotFalse(Yii::$app->cache->get($cacheKey2), 'option2 should be cached before clear');
 
-		// Clear all options - should flush cache
+		// Clear all options - should invalidate cache
 		static::assertTrue($options->clear());
 
-		// Cache should be flushed (empty)
-		static::assertFalse(\Yii::$app->cache->get($cacheKey1), 'Cache should be flushed after clear()');
-		static::assertFalse(\Yii::$app->cache->get($cacheKey2), 'Cache should be flushed after clear()');
+		// Cache should be invalidated
+		static::assertFalse(Yii::$app->cache->get($cacheKey1), 'Cache should be invalidated after clear()');
+		static::assertFalse(Yii::$app->cache->get($cacheKey2), 'Cache should be invalidated after clear()');
 
 		// Getting options should return null (not cached values)
 		static::assertNull($options->get('option1'));
@@ -327,12 +317,11 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test clear() with caching disabled does not flush cache
+	 * Verify clear() with caching disabled does not invalidate cache
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
-	public function testClearWithCachingDisabledDoesNotFlushCache():void {
+	public function testClearWithCachingDisabledDoesNotInvalidateCache():void {
 		// First instance with caching enabled
 		$options1 = new SysOptions();
 		$options1->cacheEnabled = true;
@@ -342,28 +331,27 @@ class BulkOperationsTest extends Unit {
 		static::assertEquals('cached_value', $options1->get('cached_option'));
 
 		// Verify it's cached
-		$cacheKey = \pozitronik\sys_options\models\SysOptions::class . "::get(cached_option)";
-		static::assertNotFalse(\Yii::$app->cache->get($cacheKey), 'Option should be cached');
+		$cacheKey = SysOptions::class . "::get(cached_option)";
+		static::assertNotFalse(Yii::$app->cache->get($cacheKey), 'Option should be cached');
 
 		// Second instance with caching disabled
 		$options2 = new SysOptions();
 		$options2->cacheEnabled = false;
 
-		// Clear with caching disabled - should NOT flush cache
+		// Clear with caching disabled - should NOT invalidate cache
 		static::assertTrue($options2->clear());
 
-		// Cache should still exist (was not flushed)
-		static::assertNotFalse(\Yii::$app->cache->get($cacheKey),
-			'Cache should NOT be flushed when clear() is called with cacheEnabled=false');
+		// Cache should still exist (was not invalidated)
+		static::assertNotFalse(Yii::$app->cache->get($cacheKey),
+			'Cache should NOT be invalidated when clear() is called with cacheEnabled=false');
 
 		// But database is empty
 		static::assertEmpty($options2->retrieveOptions());
 	}
 
 	/**
-	 * Test clear() and then adding new options works correctly
+	 * Verify clear() and then adding new options works correctly
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testClearAndThenAddNewOptions():void {
@@ -391,9 +379,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test bulk methods handle large number of options
+	 * Verify bulk methods handle large number of options
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testBulkMethodsHandleLargeNumberOfOptions():void {
@@ -425,9 +412,8 @@ class BulkOperationsTest extends Unit {
 	}
 
 	/**
-	 * Test retrieveOptions() with complex data types
+	 * Verify retrieveOptions() with complex data types
 	 *
-	 * @return void
 	 * @throws Exception
 	 */
 	public function testRetrieveOptionsWithComplexDataTypes():void {

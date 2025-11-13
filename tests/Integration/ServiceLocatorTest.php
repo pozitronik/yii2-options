@@ -1,26 +1,32 @@
 <?php
 declare(strict_types = 1);
 
-namespace Tests\Unit;
+namespace Tests\Integration;
 
 use Codeception\Test\Unit;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
 use Tests\Support\Helper\MigrationHelper;
-use Tests\Support\UnitTester;
+use Tests\Support\IntegrationTester;
 use Throwable;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\base\InvalidRouteException;
 
 /**
- * Tests for static methods performance optimization (Issue #2)
+ * Service locator component integration tests
+ *
+ * Tests static methods behavior with Yii2 service locator pattern,
+ * instance reuse, and component configuration.
  */
-class StaticMethodsPerformanceTest extends Unit {
+class ServiceLocatorTest extends Unit {
 
-	protected UnitTester $tester;
+	protected IntegrationTester $tester;
 
 	/**
-	 * @Override
+	 * @return void
+	 * @throws InvalidRouteException
+	 * @throws \yii\console\Exception
 	 */
 	protected function _before():void {
 		MigrationHelper::migrateFresh(['migrationPath' => ['@app/migrations/', '@app/../../migrations']]);
@@ -28,7 +34,7 @@ class StaticMethodsPerformanceTest extends Unit {
 
 	/**
 	 * Verify static methods throw exception without component configured
-	 * @return void
+	 *
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
@@ -45,7 +51,7 @@ class StaticMethodsPerformanceTest extends Unit {
 
 	/**
 	 * Verify static methods work with component configured
-	 * @return void
+	 *
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
@@ -62,8 +68,8 @@ class StaticMethodsPerformanceTest extends Unit {
 	}
 
 	/**
-	 * Verify that with component configured, same instance is reused
-	 * @return void
+	 * Verify service locator reuses same component instance
+	 *
 	 * @throws Exception
 	 */
 	public function testComponentConfigurationReusesSameInstance():void {
@@ -82,7 +88,7 @@ class StaticMethodsPerformanceTest extends Unit {
 
 	/**
 	 * Verify component configuration with custom parameters
-	 * @return void
+	 *
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
@@ -103,8 +109,8 @@ class StaticMethodsPerformanceTest extends Unit {
 	}
 
 	/**
-	 * Verify that component instance persists across multiple operations
-	 * @return void
+	 * Verify component instance persists across multiple static method calls
+	 *
 	 * @throws Throwable
 	 * @throws InvalidConfigException
 	 */
