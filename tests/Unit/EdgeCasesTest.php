@@ -480,14 +480,13 @@ class EdgeCasesTest extends Unit {
 
 	/**
 	 * Verify table name accessibility
-	 * Problem: $_tableName is private, no getter
-	 * @return void
+	 * Test: Verify table name is accessible via public property
 	 */
 	public function testTableNameAccessibility():void {
 		$options = new SysOptions();
 
-		// Should have public getter for table name
-		$tableName = $options->getTableName();
+		// Table name should be publicly accessible
+		$tableName = $options->tableName;
 		static::assertEquals('sys_options', $tableName, 'Should have access to table name');
 	}
 

@@ -151,14 +151,6 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * Returns the name of the table used for storing options (for backward compatibility)
-	 * @return string The table name
-	 */
-	public function getTableName():string {
-		return $this->tableName;
-	}
-
-	/**
 	 * Validates option name against length constraints (1-256 characters)
 	 * @param string $option The option name to validate
 	 * @return void
@@ -229,7 +221,7 @@ class SysOptions extends Model {
 	 */
 	protected function retrieveDbValue(string $option):?string {
 		try {
-			$row = (new Query())
+			$row = new Query()
 				->noCache()
 				->select('value')
 				->from($this->tableName)
@@ -344,7 +336,7 @@ class SysOptions extends Model {
 	 */
 	public function retrieveOptions(?array $condition = null):array {
 		try {
-			$query = (new Query())
+			$query = new Query()
 				->noCache()
 				->select(['option', 'value'])
 				->from($this->tableName);
@@ -392,7 +384,7 @@ class SysOptions extends Model {
 	 */
 	public function getAllNames():array {
 		try {
-			return (new Query())
+			return new Query()
 				->noCache()
 				->select('option')
 				->from($this->tableName)
