@@ -55,6 +55,23 @@ class SysOptions extends Model {
 	 */
 	public bool $cacheEnabled = true;
 
+	/**
+	 * @var array|bool Defines which classes are allowed for unserialization
+	 *
+	 * Possible values:
+	 * - true (default): ALL classes allowed (current behavior, backward compatibility)
+	 * - false: NO classes allowed, only primitive types (string, int, float, array, null).
+	 *   Attempting to unserialize an object will create __PHP_Incomplete_Class
+	 * - array: Whitelist of specific classes, e.g., [stdClass::class, DateTime::class].
+	 *   To work with simple objects, include stdClass in the list
+	 *
+	 * IMPORTANT: Value true may pose security risks when deserializing untrusted data.
+	 * It's recommended to use false or an explicit class whitelist.
+	 *
+	 * @link https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection
+	 */
+	public array|bool $allowedClasses = true;
+
 	private string $_tableName = 'sys_options';
 
 	/**
@@ -77,6 +94,30 @@ class SysOptions extends Model {
 			if (!is_callable($this->serializer[0]) || !is_callable($this->serializer[1])) {
 				throw new Exception('Both serializer elements must be callable');
 			}
+		}
+
+		// Read allowedClasses from module configuration
+		$this->allowedClasses = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.allowedClasses', $this->allowedClasses);
+
+		// Validate allowedClasses configuration
+		if (!is_bool($this->allowedClasses) && !is_array($this->allowedClasses)) {
+			throw new Exception('allowedClasses must be either a boolean or an array of class names');
+		}
+
+		if (is_array($this->allowedClasses)) {
+			foreach ($this->allowedClasses as $className) {
+				if (!is_string($className)) {
+					throw new Exception('All elements in allowedClasses array must be valid class name strings');
+				}
+			}
+		}
+
+		// Log security info when allowedClasses=true (default but potentially unsafe)
+		if (true === $this->allowedClasses) {
+			Yii::info(
+				'SysOptions is using allowedClasses=true (allows all classes). For improved security, consider using false or a whitelist of specific classes.',
+				__METHOD__
+			);
 		}
 
 		// Resolve cache component
@@ -140,11 +181,37 @@ class SysOptions extends Model {
 
 	/**
 	 * Unserializes a value retrieved from the database
+	 *
+	 * Uses $allowedClasses configuration to control deserialization security.
+	 *
 	 * @param string $value The serialized value
 	 * @return mixed The unserialized value
+	 * @throws Exception If unserialization failed or contains disallowed classes
+	 * @see $allowedClasses
 	 */
 	protected function unserialize(string $value):mixed {
-		return (null === $this->serializer)?unserialize($value, ['allowed_classes' => true]):call_user_func($this->serializer[1], $value);
+		if (null !== $this->serializer) {
+			return call_user_func($this->serializer[1], $value);
+		}
+
+		try {
+			$result = unserialize($value, ['allowed_classes' => $this->allowedClasses]);
+		} catch (Throwable $e) {
+			// Catch exceptions thrown by error handlers (e.g., Yii's ErrorHandler converting E_NOTICE to ErrorException)
+			throw new Exception("Failed to unserialize value: {$e->getMessage()}. Data may be corrupted or contain disallowed classes.");
+		}
+
+		if (false === $result && 'b:0;' !== $value) {
+			// Check if there was an error during unserialization (when no exception was thrown)
+			$error = error_get_last();
+			if ($error && (E_NOTICE === $error['type'] || E_WARNING === $error['type'])) {
+				throw new Exception("Failed to unserialize value: {$error['message']}. Data may be corrupted or contain disallowed classes.");
+			}
+
+			throw new Exception('Failed to unserialize value. Data may be corrupted or contain disallowed classes.');
+		}
+
+		return $result;
 	}
 
 	/**

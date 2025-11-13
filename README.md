@@ -50,8 +50,9 @@ php composer.phar require pozitronik/yii2-options "dev-master"
 		'sysoptions' => [
 			'class' => SysOptionsModule::class,
 			'params' => [
-				'tableName' => 'system_options',//используемое имя таблицы, по умолчанию 'dyd_options'
-				'cacheEnabled' => true//использование кеша Yii, по умолчанию false
+				'tableName' => 'system_options',//используемое имя таблицы, по умолчанию 'sys_options'
+				'cacheEnabled' => true,//использование кеша Yii, по умолчанию true
+				'allowedClasses' => [stdClass::class, DateTime::class],//белый список классов для десериализации, по умолчанию true (все классы)
 		],
 		...
 ]
@@ -72,6 +73,18 @@ $options->serializer = [
 ];
 
 ```
+
+* `array|bool $allowedClasses = true` -- контролирует классы, разрешённые для десериализации. **Важный параметр безопасности!**
+  - `true` (по умолчанию) -- разрешены ВСЕ классы (обратная совместимость, но потенциально небезопасно)
+  - `false` -- разрешены только примитивные типы (string, int, float, array, null). Объекты будут десериализованы как `__PHP_Incomplete_Class`
+  - `array` -- белый список конкретных классов, например `[stdClass::class, DateTime::class]`
+
+  **Рекомендации по безопасности:**
+  - Для максимальной безопасности используйте `false` если храните только примитивные данные (настройки, конфигурацию)
+  - Используйте белый список классов если необходимо хранить объекты
+  - Избегайте `true` если есть риск компрометации базы данных
+
+  Подробнее о рисках: [PHP Object Injection](https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection)
 
 * `bool $cacheEnabled = false` -- включает использование промежуточного кеша. Если параметр не установлен напрямую, используется значение параметра `cacheEnabled` конфигурации модуля. 
 * `string $tableName` -- название таблицы, используемое модулем (read-only). 
