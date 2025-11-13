@@ -334,35 +334,66 @@ class SysOptions extends Model {
 	}
 
 	/**
+	 * Gets SysOptions instance from service locator
+	 *
+	 * Requires 'sysoptions' component to be configured in application config.
+	 *
+	 * @return self The SysOptions instance
+	 * @throws Exception If 'sysoptions' component is not configured
+	 */
+	private static function getServiceInstance():self {
+		if (!Yii::$app->has('sysoptions')) {
+			throw new Exception(
+				'SysOptions component is not configured. Add to application config: ' .
+				"'components' => ['sysoptions' => ['class' => SysOptions::class]]"
+			);
+		}
+		return Yii::$app->get('sysoptions');
+	}
+
+	/**
 	 * Static call with the same logic as get()
+	 *
+	 * Requires 'sysoptions' component configured in application:
+	 * 'components' => ['sysoptions' => ['class' => SysOptions::class]]
+	 *
 	 * @param string $option The option name
 	 * @param mixed $default Default value to return if option doesn't exist (null by default)
 	 * @return mixed The option value or default if option doesn't exist
+	 * @throws Exception If 'sysoptions' component is not configured
 	 * @throws Throwable
 	 */
 	public static function getStatic(string $option, mixed $default = null):mixed {
-		return (new self())->get($option, $default);
+		return self::getServiceInstance()->get($option, $default);
 	}
 
 	/**
 	 * Static call with the same logic as set()
+	 *
+	 * Requires 'sysoptions' component configured in application:
+	 * 'components' => ['sysoptions' => ['class' => SysOptions::class]]
+	 *
 	 * @param string $option The option name
 	 * @param mixed $value The value to store (will be serialized)
 	 * @return bool True on success, false on failure
-	 * @throws Exception
+	 * @throws Exception If 'sysoptions' component is not configured
 	 */
 	public static function setStatic(string $option, mixed $value):bool {
-		return (new self())->set($option, $value);
+		return self::getServiceInstance()->set($option, $value);
 	}
 
 	/**
 	 * Static call with the same logic as drop()
+	 *
+	 * Requires 'sysoptions' component configured in application:
+	 * 'components' => ['sysoptions' => ['class' => SysOptions::class]]
+	 *
 	 * @param string $option The option name to delete
 	 * @return bool True on success, false on failure
-	 * @throws Exception
+	 * @throws Exception If 'sysoptions' component is not configured
 	 */
 	public static function dropStatic(string $option):bool {
-		return (new self())->drop($option);
+		return self::getServiceInstance()->drop($option);
 	}
 
 }

@@ -2,6 +2,7 @@
 declare(strict_types = 1);
 
 use app\models\Users;
+use pozitronik\sys_options\models\SysOptions;
 use yii\log\FileTarget;
 use yii\caching\DummyCache;
 use yii\web\AssetManager;
@@ -24,6 +25,9 @@ $config = [
 		],
 		'cache' => [
 			'class' => DummyCache::class,
+		],
+		'sysoptions' => [
+			'class' => SysOptions::class,
 		],
 		'user' => [
 			'identityClass' => Users::class,
