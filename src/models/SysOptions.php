@@ -141,7 +141,7 @@ class SysOptions extends Model {
 		}
 
 		// Resolve cache component
-		if (null === $this->cache) {
+		if ($this->cacheEnabled && null === $this->cache) {
 			// Backward compatibility: if cache is not specified, use application default cache
 			$this->cache = Yii::$app->cache;
 		} else {
