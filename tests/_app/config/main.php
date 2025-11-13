@@ -1,7 +1,6 @@
 <?php /** @noinspection UsingInclusionReturnValueInspection */
 declare(strict_types = 1);
 
-use app\models\Users;
 use pozitronik\sys_options\models\SysOptions;
 use yii\log\FileTarget;
 use yii\caching\DummyCache;
@@ -28,10 +27,6 @@ $config = [
 		],
 		'sysoptions' => [
 			'class' => SysOptions::class,
-		],
-		'user' => [
-			'identityClass' => Users::class,
-			'enableAutoLogin' => true,
 		],
 		'errorHandler' => [
 			'class' => ErrorHandler::class,
