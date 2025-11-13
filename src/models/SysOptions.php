@@ -12,7 +12,6 @@ use yii\caching\TagDependency;
 use yii\db\Connection;
 use yii\db\Query;
 use yii\di\Instance;
-use yii\helpers\ArrayHelper;
 use yii\validators\StringValidator;
 
 /**
@@ -86,7 +85,10 @@ class SysOptions extends Model {
 	 */
 	public array|bool $allowedClasses = true;
 
-	private string $_tableName = 'sys_options';
+	/**
+	 * @var string Database table name for storing options
+	 */
+	public string $tableName = 'sys_options';
 
 	/**
 	 * {@inheritdoc}
@@ -94,9 +96,6 @@ class SysOptions extends Model {
 	public function init():void {
 		parent::init();
 		$this->db = Instance::ensure($this->db, Connection::class);
-		$this->_tableName = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.tableName', $this->_tableName);
-		$this->cacheEnabled = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheEnabled', $this->cacheEnabled);
-		$this->cacheDuration = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.cacheDuration', $this->cacheDuration);
 
 		// Validate serializer configuration
 		if (null !== $this->serializer) {
@@ -111,9 +110,6 @@ class SysOptions extends Model {
 			}
 		}
 
-		// Read allowedClasses from module configuration
-		$this->allowedClasses = ArrayHelper::getValue(Yii::$app->modules, 'sysoptions.params.allowedClasses', $this->allowedClasses);
-
 		// Validate allowedClasses configuration
 		if (!is_bool($this->allowedClasses) && !is_array($this->allowedClasses)) {
 			throw new Exception('allowedClasses must be either a boolean or an array of class names');
@@ -125,14 +121,6 @@ class SysOptions extends Model {
 					throw new Exception('All elements in allowedClasses array must be valid class name strings');
 				}
 			}
-		}
-
-		// Log security info when allowedClasses=true (default but potentially unsafe)
-		if (true === $this->allowedClasses) {
-			Yii::info(
-				'SysOptions is using allowedClasses=true (allows all classes). For improved security, consider using false or a whitelist of specific classes.',
-				__METHOD__
-			);
 		}
 
 		// Validate cacheDuration configuration
@@ -163,11 +151,11 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * Returns the name of the table used for storing options
+	 * Returns the name of the table used for storing options (for backward compatibility)
 	 * @return string The table name
 	 */
 	public function getTableName():string {
-		return $this->_tableName;
+		return $this->tableName;
 	}
 
 	/**
@@ -244,7 +232,7 @@ class SysOptions extends Model {
 			$row = (new Query())
 				->noCache()
 				->select('value')
-				->from($this->_tableName)
+				->from($this->tableName)
 				->where(['option' => $option])
 				->one();
 
@@ -266,7 +254,7 @@ class SysOptions extends Model {
 	protected function applyDbValue(string $option, string $value):bool {
 		try {
 			return $this->db->noCache(function(Connection $db) use ($option, $value) {
-				$db->createCommand()->upsert($this->_tableName, compact('option', 'value'))->execute();
+				$db->createCommand()->upsert($this->tableName, compact('option', 'value'))->execute();
 				return true;
 			});
 		} catch (Throwable $e) {
@@ -283,7 +271,7 @@ class SysOptions extends Model {
 	protected function removeDbValue(string $option):bool {
 		try {
 			return $this->db->noCache(function(Connection $db) use ($option) {
-				$db->createCommand()->delete($this->_tableName, compact('option'))->execute();
+				$db->createCommand()->delete($this->tableName, compact('option'))->execute();
 				return true;
 			});
 		} catch (Throwable $e) {
@@ -359,7 +347,7 @@ class SysOptions extends Model {
 			$query = (new Query())
 				->noCache()
 				->select(['option', 'value'])
-				->from($this->_tableName);
+				->from($this->tableName);
 
 			if (null !== $condition) {
 				$query->where($condition);
@@ -407,7 +395,7 @@ class SysOptions extends Model {
 			return (new Query())
 				->noCache()
 				->select('option')
-				->from($this->_tableName)
+				->from($this->tableName)
 				->column();
 		} catch (Throwable $e) {
 			Yii::warning("Unable to retrieve option names from database: {$e->getMessage()}", __METHOD__);
@@ -452,7 +440,7 @@ class SysOptions extends Model {
 
 			// Delete all records from database
 			$result = $this->db->noCache(function(Connection $db) {
-				$db->createCommand()->delete($this->_tableName)->execute();
+				$db->createCommand()->delete($this->tableName)->execute();
 				return true;
 			});
 
@@ -491,7 +479,7 @@ class SysOptions extends Model {
 	}
 
 	/**
-	 * Static call with the same logic as get()
+	 * Static call with the same logic as get() (for backward compatibility)
 	 *
 	 * Requires 'sysoptions' component configured in application:
 	 * 'components' => ['sysoptions' => ['class' => SysOptions::class]]
@@ -501,13 +489,14 @@ class SysOptions extends Model {
 	 * @return mixed The option value or default if option doesn't exist
 	 * @throws Exception If 'sysoptions' component is not configured
 	 * @throws Throwable
+	 * @deprecated Have to be removed in the next versions
 	 */
 	public static function getStatic(string $option, mixed $default = null):mixed {
 		return self::getServiceInstance()->get($option, $default);
 	}
 
 	/**
-	 * Static call with the same logic as set()
+	 * Static call with the same logic as set() (for backward compatibility)
 	 *
 	 * Requires 'sysoptions' component configured in application:
 	 * 'components' => ['sysoptions' => ['class' => SysOptions::class]]
@@ -516,13 +505,14 @@ class SysOptions extends Model {
 	 * @param mixed $value The value to store (will be serialized)
 	 * @return bool True on success, false on failure
 	 * @throws Exception If 'sysoptions' component is not configured
+	 * @deprecated Have to be removed in the next versions
 	 */
 	public static function setStatic(string $option, mixed $value):bool {
 		return self::getServiceInstance()->set($option, $value);
 	}
 
 	/**
-	 * Static call with the same logic as drop()
+	 * Static call with the same logic as drop() (for backward compatibility)
 	 *
 	 * Requires 'sysoptions' component configured in application:
 	 * 'components' => ['sysoptions' => ['class' => SysOptions::class]]
@@ -530,6 +520,7 @@ class SysOptions extends Model {
 	 * @param string $option The option name to delete
 	 * @return bool True on success, false on failure
 	 * @throws Exception If 'sysoptions' component is not configured
+	 * @deprecated Have to be removed in the next versions
 	 */
 	public static function dropStatic(string $option):bool {
 		return self::getServiceInstance()->drop($option);

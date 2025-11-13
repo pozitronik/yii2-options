@@ -7,11 +7,10 @@ use Codeception\Test\Unit;
 use DateTime;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
-use pozitronik\sys_options\SysOptionsModule;
 use stdClass;
 use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
-use Throwable;
+use TypeError;
 use Yii;
 
 /**
@@ -122,29 +121,10 @@ class SerializationSecurityTest extends Unit {
 	}
 
 	/**
-	 * Test: Configuration of allowedClasses via module
-	 * @return void
-	 */
-	public function testAllowedClassesViaModuleConfiguration():void {
-		Yii::$app->setModule('sysoptions', [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'allowedClasses' => [DateTime::class],
-			]
-		]);
-
-		$options = new SysOptions();
-		static::assertEquals([DateTime::class], $options->allowedClasses);
-	}
-
-	/**
 	 * Test: allowedClasses=true logs info message
 	 * @return void
 	 */
 	public function testAllowedClassesTrueLogsInfo():void {
-		// Reset module for clean test
-		Yii::$app->setModule('sysoptions', null);
-
 		// Create new instance with allowedClasses=true (default)
 		$options = new SysOptions();
 
@@ -158,38 +138,16 @@ class SerializationSecurityTest extends Unit {
 
 	/**
 	 * Test: Invalid allowedClasses configuration (not bool and not array)
-	 * PHP's strict typing throws TypeError before our validation
+	 * PHP's strict typing throws TypeError
 	 * @return void
 	 */
 	public function testInvalidAllowedClassesType():void {
-		Yii::$app->setModule('sysoptions', [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'allowedClasses' => 'invalid',
-			]
-		]);
+		$this->expectException(TypeError::class);
 
-		$this->expectException(Throwable::class);
-
-		new SysOptions();
-	}
-
-	/**
-	 * Test: allowedClasses array contains non-string elements
-	 * @return void
-	 */
-	public function testAllowedClassesArrayContainsNonString():void {
-		Yii::$app->setModule('sysoptions', [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'allowedClasses' => [stdClass::class, 123, true],
-			]
-		]);
-
-		$this->expectException(Exception::class);
-		$this->expectExceptionMessage('All elements in allowedClasses array must be valid class name strings');
-
-		new SysOptions();
+		$options = new SysOptions();
+		// Strict typing will throw TypeError
+		/** @noinspection PhpStrictTypeCheckingInspection */
+		$options->allowedClasses = 'invalid';
 	}
 
 	/**

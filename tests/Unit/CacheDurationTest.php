@@ -13,7 +13,6 @@ use TypeError;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\caching\FileCache;
-use pozitronik\sys_options\SysOptionsModule;
 
 /**
  * Tests for Issue #15: No Cache TTL Configuration
@@ -106,25 +105,6 @@ class CacheDurationTest extends Unit {
 
 		// With duration=0, cache expires immediately
 		// Note: Yii2 cache with duration=0 means "cache until end of request" or immediate expiry depending on backend
-	}
-
-	/**
-	 * Test cacheDuration can be read from module configuration
-	 *
-	 * @return void
-	 * @throws Exception
-	 */
-	public function testCacheDurationFromModuleConfiguration():void {
-		// Configure module with custom cacheDuration
-		Yii::$app->setModule('sysoptions', [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'cacheDuration' => 7200, // 2 hours
-			],
-		]);
-
-		$options = new SysOptions();
-		static::assertEquals(7200, $options->cacheDuration, 'cacheDuration should be read from module configuration');
 	}
 
 	/**

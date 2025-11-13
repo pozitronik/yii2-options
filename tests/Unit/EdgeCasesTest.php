@@ -6,7 +6,6 @@ namespace Tests\Unit;
 use Codeception\Test\Unit;
 use Exception;
 use pozitronik\sys_options\models\SysOptions;
-use pozitronik\sys_options\SysOptionsModule;
 use stdClass;
 use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
@@ -321,16 +320,9 @@ class EdgeCasesTest extends Unit {
 			true
 		)->execute();
 
-		// Configure module with custom table name
-		Yii::$app->setModule('sysoptions', [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'tableName' => $customTableName,
-			]
-		]);
-
-		// Create new instance - it should use custom table
+		// Create new instance with custom table name
 		$options = new SysOptions();
+		$options->tableName = $customTableName;
 
 		static::assertTrue($options->set('custom_table_test', 'test_value'));
 		static::assertEquals('test_value', $options->get('custom_table_test'));
@@ -358,19 +350,9 @@ class EdgeCasesTest extends Unit {
 			'class' => FileCache::class,
 		]);
 
-		// Configure module with disabled cache
-		Yii::$app->setModule('sysoptions', [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'cacheEnabled' => false,
-			]
-		]);
-
+		// Create instance with disabled cache
 		$options = new SysOptions();
-
-		// cacheEnabled should be false from module configuration
-		static::assertFalse($options->cacheEnabled,
-			'cacheEnabled should be false from module configuration');
+		$options->cacheEnabled = false;
 
 		static::assertTrue($options->set('no_cache_test', 'test_value'));
 		static::assertEquals('test_value', $options->get('no_cache_test'));
