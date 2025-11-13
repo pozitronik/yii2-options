@@ -249,12 +249,7 @@ class SysOptions extends Model {
 				->one();
 
 			if (false !== $row) {
-				/** @noinspection OffsetOperationsInspection There's no way to explain EA Extended that it's a proper structure */
-				$value = $row['value'];
-				if (is_resource($value) && 'stream' === get_resource_type($value)) {
-					return stream_get_contents($value, null, 0); // We don't have to close stream, since PDO does it
-				}
-				return $value;
+				return self::getRowValue($row);
 			}
 		} catch (Throwable $e) {
 			Yii::warning("Unable to retrieve option value from database: {$e->getMessage()}", __METHOD__);
@@ -351,6 +346,130 @@ class SysOptions extends Model {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $result;
+	}
+
+	/**
+	 * Retrieves options from database based on WHERE condition
+	 *
+	 * @param array|null $condition WHERE condition for Query (null = all records)
+	 * @return array Associative array of options ['option_name' => value]
+	 */
+	public function retrieveOptions(?array $condition = null):array {
+		try {
+			$query = (new Query())
+				->noCache()
+				->select(['option', 'value'])
+				->from($this->_tableName);
+
+			if (null !== $condition) {
+				$query->where($condition);
+			}
+
+			$rows = $query->all();
+
+			$result = [];
+			foreach ($rows as $row) {
+				$result[$row['option']] = $this->unserialize(self::getRowValue($row));
+			}
+
+			return $result;
+		} catch (Throwable $e) {
+			Yii::warning("Unable to retrieve options from database: {$e->getMessage()}", __METHOD__);
+			return [];
+		}
+	}
+
+	/**
+	 * Extracts value from database row, handling PostgreSQL resource stream
+	 *
+	 * @param array $row Database row with 'value' key
+	 * @return string Serialized value content
+	 * @throws Exception
+	 */
+	private static function getRowValue(array $row):string {
+		$value = $row['value'];
+		if (is_resource($value) && 'stream' === get_resource_type($value)) {
+			// PDO manages these resources internally, they're automatically freed when the result set is destroyed
+			$value = stream_get_contents($value, null, 0);
+		}
+		return $value;
+	}
+
+	/**
+	 * Retrieves all option names
+	 *
+	 * Returns list of all option names stored in database.
+	 *
+	 * @return array Array of option names
+	 */
+	public function getAllNames():array {
+		try {
+			return (new Query())
+				->noCache()
+				->select('option')
+				->from($this->_tableName)
+				->column();
+		} catch (Throwable $e) {
+			Yii::warning("Unable to retrieve option names from database: {$e->getMessage()}", __METHOD__);
+			return [];
+		}
+	}
+
+	/**
+	 * Retrieves options matching SQL LIKE pattern
+	 *
+	 * Returns options where name matches the SQL LIKE pattern.
+	 *
+	 * Pattern examples:
+	 * - 'app.%' - matches 'app.cache', 'app.debug', etc.
+	 * - '%config%' - matches 'app.config', 'db.config', 'user_config', etc.
+	 * - 'cache_' - matches 'cache_1', 'cache_2', etc. (single character)
+	 *
+	 * NOTE: This method does not use cache and reads directly from database.
+	 *
+	 * @param string $pattern SQL LIKE pattern (use % for wildcard, _ for single char)
+	 * @return array Associative array of matching options ['option_name' => value]
+	 */
+	public function getByPattern(string $pattern):array {
+		return $this->retrieveOptions(['like', 'option', $pattern, false]);
+	}
+
+	/**
+	 * Deletes all options from database and invalidates cache
+	 *
+	 * WARNING: This operation cannot be undone!
+	 *
+	 * Cache invalidation: When caching is enabled, this method retrieves all option names before deletion
+	 * and invalidates only corresponding cache entries via TagDependency. This ensures that only
+	 * SysOptions cache entries are cleared, without affecting data from other components.
+	 *
+	 * @return bool True on success, false on database error or error retrieving option names
+	 */
+	public function clear():bool {
+		try {
+			// Get all option names before deletion for cache invalidation
+			$optionNames = $this->getAllNames();
+
+			// Delete all records from database
+			$result = $this->db->noCache(function(Connection $db) {
+				$db->createCommand()->delete($this->_tableName)->execute();
+				return true;
+			});
+
+			// Invalidate only cache for deleted options (not entire cache)
+			if ($result && $this->cacheEnabled && !empty($optionNames)) {
+				$tags = array_map(
+					static fn(string $option):string => static::class."::get({$option})",
+					$optionNames
+				);
+				TagDependency::invalidate($this->cache, $tags);
+			}
+
+			return $result;
+		} catch (Throwable $e) {
+			Yii::warning("Unable to clear all options: {$e->getMessage()}", __METHOD__);
+		}
+		return false;
 	}
 
 	/**
