@@ -66,7 +66,7 @@ class CacheInvalidationTest extends Unit {
 			'DB write (applyDbValue) should happen BEFORE cache invalidation in set()');
 
 		// Verify that invalidation is conditional on success
-		// Should have pattern: if ($result && $this->cacheEnabled)
+		// Should have pattern: if ($result && null !== $this->cache)
 		static::assertStringContainsString('$result', $setMethodBody,
 			'Cache invalidation should be conditional on DB write result');
 	}
@@ -99,7 +99,7 @@ class CacheInvalidationTest extends Unit {
 			'DB delete (removeDbValue) should happen BEFORE cache invalidation in drop()');
 
 		// Verify that invalidation is conditional on success
-		// Should have pattern: if ($result && $this->cacheEnabled)
+		// Should have pattern: if ($result && null !== $this->cache)
 		static::assertStringContainsString('$result', $dropMethodBody,
 			'Cache invalidation should be conditional on DB delete result');
 	}
@@ -111,7 +111,6 @@ class CacheInvalidationTest extends Unit {
 	 */
 	public function testSuccessfulSetInvalidatesCache():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set initial value
 		static::assertTrue($options->set('test_option', 'initial_value'));
@@ -134,7 +133,6 @@ class CacheInvalidationTest extends Unit {
 	 */
 	public function testSuccessfulDropInvalidatesCache():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set initial value
 		static::assertTrue($options->set('test_option', 'test_value'));

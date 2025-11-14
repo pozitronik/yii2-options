@@ -46,7 +46,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testCachePersistenceAcrossMultipleGets():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set value
 		static::assertTrue($options->set('test_option', 'test_value'));
@@ -78,7 +77,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testTagInvalidationScopedToSpecificOption():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set and cache two different options
 		static::assertTrue($options->set('option1', 'value1'));
@@ -117,7 +115,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testTagInvalidationWithMultipleOptions():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Create 10 options
 		for ($i = 1; $i <= 10; $i++) {
@@ -162,7 +159,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testDropInvalidatesCacheWithTagDependency():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set and cache value
 		static::assertTrue($options->set('test_option', 'test_value'));
@@ -190,10 +186,8 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testMultipleInstancesShareCache():void {
 		$options1 = new SysOptions();
-		$options1->cacheEnabled = true;
 
 		$options2 = new SysOptions();
-		$options2->cacheEnabled = true;
 
 		// Instance 1 sets and caches value
 		static::assertTrue($options1->set('shared_option', 'initial_value'));
@@ -218,7 +212,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testCacheInvalidationWithNullValues():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set non-null value
 		static::assertTrue($options->set('test_option', 'initial_value'));
@@ -245,7 +238,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testNonExistentOptionsNotCached():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Get non-existent option with default
 		$result = $options->get('nonexistent', 'default_value');
@@ -273,7 +265,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testManualTagDependencyInvalidation():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set and cache value
 		static::assertTrue($options->set('test_option', 'test_value'));
@@ -302,7 +293,6 @@ class TagDependencyTest extends Unit {
 	public function testCacheBehaviorWithToggledCaching():void {
 		// Start with caching enabled
 		$options1 = new SysOptions();
-		$options1->cacheEnabled = true;
 
 		static::assertTrue($options1->set('test_option', 'cached_value'));
 		static::assertEquals('cached_value', $options1->get('test_option'));
@@ -312,8 +302,7 @@ class TagDependencyTest extends Unit {
 		static::assertNotFalse(Yii::$app->cache->get($cacheKey), 'Value should be cached');
 
 		// Create new instance with caching disabled
-		$options2 = new SysOptions();
-		$options2->cacheEnabled = false;
+		$options2 = new SysOptions(['cache' => null]);
 
 		// Update value without caching
 		static::assertTrue($options2->set('test_option', 'new_value'));
@@ -324,7 +313,6 @@ class TagDependencyTest extends Unit {
 
 		// Instance with caching enabled would read stale cache
 		$options3 = new SysOptions();
-		$options3->cacheEnabled = true;
 
 		// This demonstrates a potential issue: stale cache when toggling caching
 		// However, this is expected behavior - if you disable caching, you're responsible for cache management
@@ -339,7 +327,6 @@ class TagDependencyTest extends Unit {
 	 */
 	public function testCacheKeyUniqueness():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set options with similar names
 		static::assertTrue($options->set('test', 'value1'));

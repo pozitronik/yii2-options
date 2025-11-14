@@ -57,7 +57,6 @@ class CacheConfigurationTest extends Unit {
 	 */
 	public function testInfiniteCachingWithNullDuration():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 		$options->cacheDuration = null;
 
 		// Set and get value
@@ -77,7 +76,6 @@ class CacheConfigurationTest extends Unit {
 	 */
 	public function testCacheDurationWithPositiveInteger():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 		$options->cacheDuration = 3600; // 1 hour
 
 		// Set and get value
@@ -91,13 +89,12 @@ class CacheConfigurationTest extends Unit {
 	}
 
 	/**
-	 * Verify cacheDuration = 0 (effectively no caching, but doesn't disable cacheEnabled)
+	 * Verify cacheDuration = 0 (effectively no caching, but cache component is still used)
 	 *
 	 * @throws Exception
 	 */
 	public function testCacheDurationZero():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 		$options->cacheDuration = 0;
 
 		// Set and get value
@@ -143,7 +140,6 @@ class CacheConfigurationTest extends Unit {
 	 */
 	public function testTagDependencyInvalidationWorksWithCacheDuration():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 		$options->cacheDuration = 86400; // 24 hours
 
 		// Set initial value
@@ -167,7 +163,6 @@ class CacheConfigurationTest extends Unit {
 	 */
 	public function testDropInvalidatesCacheWithCacheDuration():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 		$options->cacheDuration = 86400; // 24 hours
 
 		// Set value
@@ -209,7 +204,7 @@ class CacheConfigurationTest extends Unit {
 	/**
 	 * Verify cacheDuration doesn't affect behavior when caching is disabled
 	 *
-	 * When cacheEnabled=false, get() method should always read from database,
+	 * When cache=null, get() method should always read from database,
 	 * regardless of cacheDuration value.
 	 *
 	 * @throws Exception
@@ -217,7 +212,6 @@ class CacheConfigurationTest extends Unit {
 	public function testCacheDurationIgnoredWhenCachingDisabled():void {
 		// First, populate with caching enabled
 		$options1 = new SysOptions();
-		$options1->cacheEnabled = true;
 		$options1->cacheDuration = 3600;
 		static::assertTrue($options1->set('test_option', 'cached_value'));
 		static::assertEquals('cached_value', $options1->get('test_option'));
@@ -226,12 +220,11 @@ class CacheConfigurationTest extends Unit {
 		static::assertTrue($options1->set('test_option', 'new_value'));
 
 		// Create new instance with caching disabled
-		$options2 = new SysOptions();
-		$options2->cacheEnabled = false;
+		$options2 = new SysOptions(['cache' => null]);
 		$options2->cacheDuration = 3600; // This should be ignored
 
 		// Should read from DB, not cache (even though cacheDuration is set)
 		static::assertEquals('new_value', $options2->get('test_option'),
-			'With cacheEnabled=false, should read from DB regardless of cacheDuration');
+			'With cache=null, should read from DB regardless of cacheDuration');
 	}
 }

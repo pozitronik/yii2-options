@@ -288,7 +288,6 @@ class BulkOperationsTest extends Unit {
 	 */
 	public function testClearInvalidatesCache():void {
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set and cache some options
 		static::assertTrue($options->set('option1', 'value1'));
@@ -324,7 +323,6 @@ class BulkOperationsTest extends Unit {
 	public function testClearWithCachingDisabledDoesNotInvalidateCache():void {
 		// First instance with caching enabled
 		$options1 = new SysOptions();
-		$options1->cacheEnabled = true;
 
 		// Set and cache an option
 		static::assertTrue($options1->set('cached_option', 'cached_value'));
@@ -335,15 +333,14 @@ class BulkOperationsTest extends Unit {
 		static::assertNotFalse(Yii::$app->cache->get($cacheKey), 'Option should be cached');
 
 		// Second instance with caching disabled
-		$options2 = new SysOptions();
-		$options2->cacheEnabled = false;
+		$options2 = new SysOptions(['cache' => null]);
 
 		// Clear with caching disabled - should NOT invalidate cache
 		static::assertTrue($options2->clear());
 
 		// Cache should still exist (was not invalidated)
 		static::assertNotFalse(Yii::$app->cache->get($cacheKey),
-			'Cache should NOT be invalidated when clear() is called with cacheEnabled=false');
+			'Cache should NOT be invalidated when clear() is called with cache=null');
 
 		// But database is empty
 		static::assertEmpty($options2->retrieveOptions());

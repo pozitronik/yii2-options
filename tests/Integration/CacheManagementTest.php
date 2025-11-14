@@ -47,7 +47,6 @@ class CacheManagementTest extends Unit {
 		]);
 
 		$options = new SysOptions();
-		$options->cacheEnabled = true;
 
 		// Set value
 		$options->set('cached_option', 'initial_value');
@@ -78,34 +77,12 @@ class CacheManagementTest extends Unit {
 		$options = new SysOptions();
 
 		// Caching should be automatically disabled during initialization
-		static::assertFalse($options->cacheEnabled, 'Caching should be disabled when cache component is null');
+		static::assertNull($options->cache, 'Cache should be null when cache component is not available');
 
 		// These operations should work without exceptions (caching disabled)
 		static::assertTrue($options->set('test_option', 'test_value'));
 		static::assertEquals('test_value', $options->get('test_option'));
 		static::assertTrue($options->drop('test_option'));
-	}
-
-	/**
-	 * Verify manually enabling cache when component is null throws exception
-	 *
-	 * If user manually sets cacheEnabled=true with null cache component,
-	 * cache operations should throw exception.
-	 *
-	 * @throws BaseException
-	 */
-	public function testManuallyEnablingCacheWithNullComponentThrowsException():void {
-		// Remove cache component
-		Yii::$app->set('cache', null);
-
-		$options = new SysOptions();
-
-		// Manually override cacheEnabled (user shooting their own leg)
-		$options->cacheEnabled = true;
-
-		// Should throw exception when trying to use cache operations
-		$this->expectException(Throwable::class);
-		$options->set('test_option', 'test_value');
 	}
 
 	/**
@@ -123,8 +100,7 @@ class CacheManagementTest extends Unit {
 		// Create options with explicit cache component reference that doesn't exist
 		$options = new SysOptions(['cache' => 'nonexistent_cache_component']);
 
-		// Caching should be automatically disabled
-		static::assertFalse($options->cacheEnabled, 'Caching should be disabled when cache component resolution fails');
+		// Cache should be null after resolution failure
 		static::assertNull($options->cache, 'Cache property should be null after resolution failure');
 
 		// Operations should still work without cache
@@ -144,9 +120,9 @@ class CacheManagementTest extends Unit {
 		]);
 
 		// Create instance with disabled cache
-		$options = new SysOptions();
-		$options->cacheEnabled = false;
+		$options = new SysOptions(['cache' => null]);
 
+		static::assertNull($options->cache, 'Cache should be null when explicitly disabled');
 		static::assertTrue($options->set('no_cache_test', 'test_value'));
 		static::assertEquals('test_value', $options->get('no_cache_test'));
 	}

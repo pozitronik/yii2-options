@@ -56,9 +56,8 @@ Configure the component with optional parameters:
     'sysoptions' => [
         'class' => \pozitronik\sys_options\models\SysOptions::class,
         'tableName' => 'custom_options',      // Default: 'sys_options'
-        'cacheEnabled' => true,                // Default: true
+        'cache' => 'cache',                    // Default: 'cache' (set to null to disable)
         'cacheDuration' => 3600,               // Default: null (infinite)
-        'cache' => 'cache',                    // Default: 'cache'
         'allowedClasses' => false,             // Default: true (see Security below)
     ],
 ],
@@ -66,15 +65,14 @@ Configure the component with optional parameters:
 
 ### Configuration Options
 
-| Property         | Type                     | Default         | Description                                        |
-|------------------|--------------------------|-----------------|----------------------------------------------------|
-| `tableName`      | `string`                 | `'sys_options'` | Database table name for storing options            |
-| `cacheEnabled`   | `bool`                   | `true`          | Enable/disable caching                             |
-| `cacheDuration`  | `int\|null`              | `null`          | Cache duration in seconds (null = infinite)        |
-| `cache`          | `string\|CacheInterface` | `'cache'`       | Cache component ID or instance                     |
-| `db`             | `string\|Connection`     | `'db'`          | Database connection component ID or instance       |
-| `allowedClasses` | `bool\|array`            | `true`          | Classes allowed for deserialization (see Security) |
-| `serializer`     | `array\|null`            | `null`          | Custom serialization functions                     |
+| Property         | Type                           | Default         | Description                                                |
+|------------------|--------------------------------|-----------------|------------------------------------------------------------|
+| `tableName`      | `string`                       | `'sys_options'` | Database table name for storing options                    |
+| `cache`          | `string\|CacheInterface\|null` | `'cache'`       | Cache component ID or instance (null to disable caching)   |
+| `cacheDuration`  | `int\|null`                    | `null`          | Cache duration in seconds (null = infinite)                |
+| `db`             | `string\|Connection`           | `'db'`          | Database connection component ID or instance               |
+| `allowedClasses` | `bool\|array`                  | `true`          | Classes allowed for deserialization (see Security)         |
+| `serializer`     | `array\|null`                  | `null`          | Custom serialization functions                             |
 
 ## Usage
 
@@ -173,7 +171,7 @@ The extension uses Yii2's caching with TagDependency for automatic cache invalid
 'components' => [
     'sysoptions' => [
         'class' => \pozitronik\sys_options\models\SysOptions::class,
-        'cacheEnabled' => true,      // Enable caching
+        'cache' => 'cache',          // Cache component (set to null to disable)
         'cacheDuration' => 3600,     // 1 hour (null = infinite)
     ],
 ],

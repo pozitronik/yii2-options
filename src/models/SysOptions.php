@@ -33,11 +33,11 @@ class SysOptions extends Model {
 	 * - string: application component ID (e.g., 'cache', 'redisCache')
 	 * - array: configuration array for creating the cache component
 	 * - CacheInterface: cache object
-	 * - null: use application default cache (Yii::$app->cache), to explicitly disable set $cacheEnabled = false
+	 * - null: caching disabled
 	 * After the SysOptions object is created, if you want to change this property, you should only assign it
 	 * with a cache object.
 	 */
-	public CacheInterface|array|string|null $cache = null;
+	public CacheInterface|array|string|null $cache = 'cache';
 
 	/**
 	 * @var null|array the functions used to serialize and unserialize values. Defaults to null, meaning
@@ -49,18 +49,12 @@ class SysOptions extends Model {
 	public null|array $serializer = null;
 
 	/**
-	 * @var bool enable intermediate caching. Default value can be set in module configuration.
-	 * If $cache is not configured or null, caching will be automatically disabled regardless of this parameter.
-	 */
-	public bool $cacheEnabled = true;
-
-	/**
 	 * @var int|null Cache duration for options in seconds. Defaults to null (infinite caching).
 	 * Value can be set in module configuration.
 	 *
 	 * Possible values:
 	 * - null (default): infinite caching (current behavior, backward compatibility)
-	 * - 0: cache not used (equivalent to $cacheEnabled = false)
+	 * - 0: cache not used (equivalent to $cache = null)
 	 * - positive number: cache lifetime in seconds (e.g., 3600 for 1 hour)
 	 *
 	 * NOTE: cache is also invalidated via TagDependency when set() or drop() is called,
@@ -129,24 +123,13 @@ class SysOptions extends Model {
 		}
 
 		// Resolve cache component
-		if ($this->cacheEnabled && null === $this->cache) {
-			// Backward compatibility: if cache is not specified, use application default cache
-			$this->cache = Yii::$app->cache;
-		} else {
-			// If explicitly specified, resolve via Instance::ensure
+		if (null !== $this->cache) {
 			try {
 				$this->cache = Instance::ensure($this->cache, CacheInterface::class);
 			} catch (Throwable $e) {
 				Yii::warning("Failed to resolve cache component: {$e->getMessage()}. Caching disabled.", __METHOD__);
 				$this->cache = null;
-				$this->cacheEnabled = false;
 			}
-		}
-
-		// If caching is enabled but cache component is missing - disable caching
-		if ($this->cacheEnabled && null === $this->cache) {
-			Yii::warning('Caching is enabled but cache component is not configured. Caching disabled.', __METHOD__);
-			$this->cacheEnabled = false;
 		}
 	}
 
@@ -284,7 +267,7 @@ class SysOptions extends Model {
 
 		$cacheKey = static::class."::get({$option})";
 
-		if ($this->cacheEnabled) { // Try to get from cache first, else retrieve from DB
+		if (null !== $this->cache) { // Try to get from cache first, else retrieve from DB
 			if ((false === $dbValue = $this->cache->get($cacheKey)) && null !== $dbValue = $this->retrieveDbValue($option)) {
 				$this->cache->set($cacheKey, $dbValue, $this->cacheDuration, new TagDependency(['tags' => static::class."::get({$option})"]));
 			}
@@ -307,7 +290,7 @@ class SysOptions extends Model {
 	public function set(string $option, mixed $value):bool {
 		$this->validateOptionName($option);
 		$result = $this->applyDbValue($option, $this->serialize($value));
-		if ($result && $this->cacheEnabled) {
+		if ($result && null !== $this->cache) {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $result;
@@ -322,7 +305,7 @@ class SysOptions extends Model {
 	public function drop(string $option):bool {
 		$this->validateOptionName($option);
 		$result = $this->removeDbValue($option);
-		if ($result && $this->cacheEnabled) {
+		if ($result && null !== $this->cache) {
 			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
 		}
 		return $result;
@@ -419,7 +402,7 @@ class SysOptions extends Model {
 	 *
 	 * WARNING: This operation cannot be undone!
 	 *
-	 * Cache invalidation: When caching is enabled, this method retrieves all option names before deletion
+	 * Cache invalidation: When cache is configured, this method retrieves all option names before deletion
 	 * and invalidates only corresponding cache entries via TagDependency. This ensures that only
 	 * SysOptions cache entries are cleared, without affecting data from other components.
 	 *
@@ -437,7 +420,7 @@ class SysOptions extends Model {
 			});
 
 			// Invalidate only cache for deleted options (not entire cache)
-			if ($result && $this->cacheEnabled && !empty($optionNames)) {
+			if ($result && null !== $this->cache && !empty($optionNames)) {
 				$tags = array_map(
 					static fn(string $option):string => static::class."::get({$option})",
 					$optionNames
