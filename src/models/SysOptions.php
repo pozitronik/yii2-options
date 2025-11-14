@@ -6,7 +6,7 @@ namespace pozitronik\sys_options\models;
 use Exception;
 use Throwable;
 use Yii;
-use yii\base\Model;
+use yii\base\Component;
 use yii\caching\CacheInterface;
 use yii\caching\TagDependency;
 use yii\db\Connection;
@@ -18,7 +18,7 @@ use yii\validators\StringValidator;
  * Class SysOptions
  * Storage of system settings in DB/cache
  */
-class SysOptions extends Model {
+class SysOptions extends Component {
 
 	/**
 	 * @var Connection|array|string the DB connection object or the application component ID of the DB connection.
