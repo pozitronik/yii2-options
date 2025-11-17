@@ -1,94 +1,184 @@
-yii2-options
-=================
-Хранение системных настроек на сервере.
+# yii2-options
 
-[![Build Status](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml/badge.svg)](https://github.com/pozitronik/yii2-options/actions)
+[![Tests](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml/badge.svg)](https://github.com/pozitronik/yii2-options/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/pozitronik/yii2-options/branch/master/graph/badge.svg)](https://codecov.io/gh/pozitronik/yii2-options)
+[![Packagist Version](https://img.shields.io/packagist/v/pozitronik/yii2-options)](https://packagist.org/packages/pozitronik/yii2-options)
+[![Packagist License](https://img.shields.io/packagist/l/pozitronik/yii2-options)](https://packagist.org/packages/pozitronik/yii2-options)
+[![Packagist Downloads](https://img.shields.io/packagist/dt/pozitronik/yii2-options)](https://packagist.org/packages/pozitronik/yii2-options)
 
+Server-side key-value options storage for Yii2 applications.
 
-Установка
----------
+## Installation
 
-Предпочтительный вариант установки расширения через [composer](http://getcomposer.org/download/).
+Install via [Composer](http://getcomposer.org/download/):
 
-
-Выполните
-
-```
-php composer.phar require pozitronik/yii2-options "dev-master"
-```
-
-или добавьте
-
-```
-"pozitronik/yii2-options": "dev-master"
+```bash
+composer require pozitronik/yii2-options ^2.0.0
 ```
 
-В секцию require файла `composer.json` в вашем проекте.
+## Quick Start
 
-Описание
---------
+1. Run database migration to create the options table:
 
-Модель SysOptions умеет хранить набор произвольных key-value параметров, привязанных к любому объекту (подразумевается, что таким объектом выступает пользователь системы, но, при желании, модель может быть использована и для других объектов).
-Данные хранятся в таблице со структурой `id|option_name|option_value,` и модель всего лишь предоставляет интерфейсы для удобного доступа к хранилищу.
-Типы данных хранимых значений ограничиваются только используемым методом сериализации. По умолчанию обеспечивается типобезопасное хранение скалярных данных, массивов и объектов без реккурентных ссылок. 
+```bash
+./yii migrate --migrationPath=@vendor/pozitronik/yii2-options/migrations
+```
 
-Использование
--------------
+2. Configure the component in your application config:
 
-Расширению необходима таблица для хранения данных. Её можно создать, выполнив команду:
-
-`yii migrate --migrationPath=@vendor/pozitronik/yii2-options/migrations`
-
-В этом случае будет создана таблица `sys_options`, и никакой дополнительной настройки более не потребуется.
-
-При необходимости можно переопределить имя используемой таблицы. Для этого нужно подключить в конфигурационном файле вашего приложения модуль UsersOptionsModule с именем `usersoptions`, и в его конфигурации указать имя используемой таблицы в параметре `tableName`.
-
-Модель может использовать промежуточное кеширование (при наличии кеша в Yii), это регулируется параметром `cacheEnabled`
-Пример конфигурации:
 ```php
-'modules' => [
-		'sysoptions' => [
-			'class' => SysOptionsModule::class,
-			'params' => [
-				'tableName' => 'system_options',//используемое имя таблицы, по умолчанию 'dyd_options'
-				'cacheEnabled' => true//использование кеша Yii, по умолчанию false
-		],
-		...
-]
+'components' => [
+    'sysoptions' => [
+        'class' => \pozitronik\sys_options\models\SysOptions::class,
+    ],
+],
 ```
 
-Публичные параметры класса:
-* `Connection|array|string $db = 'db'` -- идентификатор имеющегося соединения с базой данных или конфигурация нового соединения.
-* `null|array $serializer = null` -- методы, используемые для сериализации хранимых данных. Если параметр не установлен, то используются стандартные функции `serialize()`/`unserialize()`. Для их переопределения следует задать параметр с помощью замыканий, например:
-```php
+3. Use it in your code:
 
+```php
+// Set an option
+SysOptions::setStatic('app.theme', 'dark');
+
+// Get an option
+$theme = SysOptions::getStatic('app.theme', 'light'); // Returns 'dark'
+
+// Delete an option
+SysOptions::dropStatic('app.theme');
+```
+
+## Configuration
+
+Configure the component with optional parameters:
+
+```php
+'components' => [
+    'sysoptions' => [
+        'class' => \pozitronik\sys_options\models\SysOptions::class,
+        'tableName' => 'custom_options',      // Default: 'sys_options'
+        'cache' => 'cache',                    // Default: 'cache' (set to null to disable)
+        'cacheDuration' => 3600,               // Default: null (infinite)
+        'allowedClasses' => false,             // Default: true (see Security below)
+    ],
+],
+```
+
+### Configuration Options
+
+| Property         | Type                           | Default         | Description                                                |
+|------------------|--------------------------------|-----------------|------------------------------------------------------------|
+| `tableName`      | `string`                       | `'sys_options'` | Database table name for storing options                    |
+| `cache`          | `string\|CacheInterface\|null` | `'cache'`       | Cache component ID or instance (null to disable caching)   |
+| `cacheDuration`  | `int\|null`                    | `null`          | Cache duration in seconds (null = infinite)                |
+| `db`             | `string\|Connection`           | `'db'`          | Database connection component ID or instance               |
+| `allowedClasses` | `bool\|array`                  | `true`          | Classes allowed for deserialization (see Security)         |
+| `serializer`     | `array\|null`                  | `null`          | Custom serialization functions                             |
+
+## Usage
+
+### Instance Methods
+
+```php
+$options = Yii::$app->sysoptions;
+
+// Set option
+$options->set('user.notifications', true);
+
+// Get option with default fallback
+$notifications = $options->get('user.notifications', false);
+
+// Check null vs non-existent
+$options->set('explicit.null', null);
+$options->get('explicit.null');    // Returns: null (exists in DB)
+$options->get('nonexistent');      // Returns: null (doesn't exist)
+
+// Delete option
+$options->drop('user.notifications');
+
+// Bulk operations
+$all = $options->retrieveOptions();                  // Get all options
+$names = $options->getAllNames();                    // Get all option names
+$appOptions = $options->getByPattern('app.%');       // Get by SQL LIKE pattern
+$options->clear();                                   // Delete all options
+```
+
+### Static Methods
+
+For convenience, you can use static methods without accessing the component:
+
+```php
+use pozitronik\sys_options\models\SysOptions;
+
+SysOptions::setStatic('config.version', '2.0');
+$version = SysOptions::getStatic('config.version');
+SysOptions::dropStatic('config.version');
+```
+
+**Note:** Static methods require the `sysoptions` component to be configured in your application.
+
+## Data Types
+
+The extension uses PHP serialization by default and supports any serializable data type:
+
+```php
+// Scalars
+$options->set('string', 'value');
+$options->set('integer', 42);
+$options->set('float', 3.14);
+$options->set('boolean', true);
+$options->set('null', null);
+
+// Arrays
+$options->set('array', ['key' => 'value', 'nested' => ['data']]);
+
+// Objects (when allowedClasses permits)
+$options->set('datetime', new DateTime());
+```
+
+### Custom Serialization
+
+You can use custom serialization (e.g., JSON):
+
+```php
 $options->serializer = [
-	0 => function($value) {//функция для сериализации
-		return json_encode($value);
-	},
-	1 => function(string $value) {//функция для десериализации
-		return json_decode($value);
-	},
+    fn($value) => json_encode($value),           // Serialize
+    fn(string $value) => json_decode($value),    // Deserialize
 ];
-
 ```
 
-* `bool $cacheEnabled = false` -- включает использование промежуточного кеша. Если параметр не установлен напрямую, используется значение параметра `cacheEnabled` конфигурации модуля. 
-* `string $tableName` -- название таблицы, используемое модулем (read-only). 
+## Security
 
-Публичные методы класса:
+The `allowedClasses` parameter controls PHP object deserialization security:
 
-* `get(string $option):mixed` - возвращает значение параметра `$option`.
-* `set(string $option, $value):bool` - присваивает параметру `$option` значение `$value`. Возвращает успех сохранения параметра.
-* `drop(string $option):bool` - удаляет параметр `$option`. Возвращает успех удаления параметра.
+```php
+// RECOMMENDED: Only primitives (no objects)
+'allowedClasses' => false,
 
-а также статические методы
-* `getStatic(string $option):mixed`
-* `setStatic(string $option, $value):bool`
-* `dropStatic(string $option):bool`
+// Whitelist specific classes
+'allowedClasses' => [stdClass::class, DateTime::class],
 
-Аналогичные вызовам `get()`/`set()`/`drop()`.
+// Allow all classes (default for backward compatibility - NOT RECOMMENDED)
+'allowedClasses' => true,
+```
 
-Лицензия
---------
+**Important:** Setting `allowedClasses` to `true` may pose security risks if your database is compromised. See [PHP Object Injection](https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection) for details.
+
+## Caching
+
+The extension uses Yii2's caching with TagDependency for automatic cache invalidation:
+
+```php
+'components' => [
+    'sysoptions' => [
+        'class' => \pozitronik\sys_options\models\SysOptions::class,
+        'cache' => 'cache',          // Cache component (set to null to disable)
+        'cacheDuration' => 3600,     // 1 hour (null = infinite)
+    ],
+],
+```
+
+Cache is automatically invalidated when options are modified.
+
+## License
+
 GNU GPL v3.0
