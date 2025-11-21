@@ -85,6 +85,23 @@ class SysOptions extends Component {
 	public string $tableName = 'sys_options';
 
 	/**
+	 * @var bool Enable backward compatibility fix for v1.1.0 cache entries
+	 *
+	 * When upgrading from v1.1.0 to v2.x.0 without flushing cache, old cache entries
+	 * for non-existent options contain serialize(null) = "N;", which v2.0.0 interprets
+	 * as actual null values instead of treating them as non-existent options.
+	 *
+	 * Enable this during migration period:
+	 * 'legacyCacheCompatibility' => true
+	 *
+	 * Once all v1.1.0 cache entries expire or are flushed, disable this to avoid
+	 * the extra database query overhead.
+	 *
+	 * Default: false (disabled)
+	 */
+	public bool $legacyCacheCompatibility = false;
+
+	/**
 	 * {@inheritdoc}
 	 */
 	public function init():void {
@@ -268,7 +285,14 @@ class SysOptions extends Component {
 		$cacheKey = static::class."::get({$option})";
 
 		if (null !== $this->cache) { // Try to get from cache first, else retrieve from DB
-			if ((false === $dbValue = $this->cache->get($cacheKey)) && null !== $dbValue = $this->retrieveDbValue($option)) {
+			$dbValue = $this->cache->get($cacheKey);
+
+			// Handle backward compatibility for v1.1.0 cache entries if enabled
+			if ($this->legacyCacheCompatibility && 'N;' === $dbValue) {
+				$dbValue = $this->handleLegacyCacheEntry($option, $cacheKey);
+			}
+			if ((false === $dbValue) && null !== $dbValue = $this->retrieveDbValue($option)) {// Normal cache miss - query DB and cache result
+				/** @noinspection PhpConditionAlreadyCheckedInspection False positive - $dbValue could be any */
 				$this->cache->set($cacheKey, $dbValue, $this->cacheDuration, new TagDependency(['tags' => static::class."::get({$option})"]));
 			}
 		} else { // No cache - retrieve directly
@@ -433,6 +457,32 @@ class SysOptions extends Component {
 			Yii::warning("Unable to clear all options: {$e->getMessage()}", __METHOD__);
 		}
 		return false;
+	}
+
+	/**
+	 * Handles legacy v1.1.0 cache entries during migration
+	 *
+	 * v1.1.0 cached serialize(null) = "N;" for non-existent options.
+	 * This method re-validates from database to distinguish between:
+	 * 1) Option exists with null value (keep cached "N;")
+	 * 2) Option doesn't exist (delete stale cache entry)
+	 *
+	 * @param string $option The option name
+	 * @param string $cacheKey The cache key
+	 * @return string|null The validated database value or null for non-existent options
+	 */
+	private function handleLegacyCacheEntry(string $option, string $cacheKey):?string {
+		// Re-validate from database
+		$freshValue = $this->retrieveDbValue($option);
+
+		if (null === $freshValue) {// Option doesn't exist in DB - this is stale v1.1.0 cache entry
+			$this->cache->delete($cacheKey);
+			return null;
+		}
+
+		// Option exists in DB with actual value - re-cache it
+		$this->cache->set($cacheKey, $freshValue, $this->cacheDuration, new TagDependency(['tags' => static::class."::get({$option})"]));
+		return $freshValue;
 	}
 
 	/**

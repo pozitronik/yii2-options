@@ -65,14 +65,15 @@ Configure the component with optional parameters:
 
 ### Configuration Options
 
-| Property         | Type                           | Default         | Description                                                |
-|------------------|--------------------------------|-----------------|------------------------------------------------------------|
-| `tableName`      | `string`                       | `'sys_options'` | Database table name for storing options                    |
-| `cache`          | `string\|CacheInterface\|null` | `'cache'`       | Cache component ID or instance (null to disable caching)   |
-| `cacheDuration`  | `int\|null`                    | `null`          | Cache duration in seconds (null = infinite)                |
-| `db`             | `string\|Connection`           | `'db'`          | Database connection component ID or instance               |
-| `allowedClasses` | `bool\|array`                  | `true`          | Classes allowed for deserialization (see Security)         |
-| `serializer`     | `array\|null`                  | `null`          | Custom serialization functions                             |
+| Property                   | Type                           | Default         | Description                                                |
+|----------------------------|--------------------------------|-----------------|------------------------------------------------------------|
+| `tableName`                | `string`                       | `'sys_options'` | Database table name for storing options                    |
+| `cache`                    | `string\|CacheInterface\|null` | `'cache'`       | Cache component ID or instance (null to disable caching)   |
+| `cacheDuration`            | `int\|null`                    | `null`          | Cache duration in seconds (null = infinite)                |
+| `db`                       | `string\|Connection`           | `'db'`          | Database connection component ID or instance               |
+| `allowedClasses`           | `bool\|array`                  | `true`          | Classes allowed for deserialization (see Security)         |
+| `serializer`               | `array\|null`                  | `null`          | Custom serialization functions                             |
+| `legacyCacheCompatibility` | `bool`                         | `false`         | Enable v1.1.0 cache fix during migration (temporary)       |
 
 ## Usage
 
@@ -179,6 +180,36 @@ The extension uses Yii2's caching with TagDependency for automatic cache invalid
 
 Cache is automatically invalidated when options are modified.
 
+## Migrating from v1.x to v2.x
+
+When upgrading from v1.x to v2.x without flushing cache, you may encounter issues where non-existent options return `null` instead of default values. This is caused by legacy cache entries from v1.1.0.
+
+### Option 1: Enable Legacy Cache Compatibility (Recommended for Zero-Downtime)
+
+Enable the compatibility fix temporarily during migration:
+
+```php
+'components' => [
+    'sysoptions' => [
+        'class' => \pozitronik\sys_options\models\SysOptions::class,
+        'legacyCacheCompatibility' => true,  // Enable during migration
+    ],
+],
+```
+
+This will automatically detect and fix v1.1.0 cache entries on first access. Once all legacy cache entries expire (based on your cache TTL) or after a reasonable migration period, disable this option to avoid the extra database query overhead.
+
+### Option 2: Flush Cache (Clean Approach)
+
+If you can afford to flush the cache during deployment:
+
+```bash
+# Flush all cache
+yii cache/flush-all
+
+# Or flush programmatically
+Yii::$app->cache->flush();
+```
 ## License
 
 GNU GPL v3.0
