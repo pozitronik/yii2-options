@@ -102,6 +102,12 @@ class SysOptions extends Component {
 	public bool $legacyCacheCompatibility = false;
 
 	/**
+	 * @var string|null Optional cache key prefix. if null, sets to static::class
+	 * @see self::buildOptionKey()
+	 */
+	public ?string $cachePrefix = null;
+
+	/**
 	 * {@inheritdoc}
 	 */
 	public function init():void {
@@ -282,7 +288,7 @@ class SysOptions extends Component {
 	public function get(string $option, mixed $default = null):mixed {
 		$this->validateOptionName($option);
 
-		$cacheKey = static::class."::get({$option})";
+		$cacheKey = $this->buildOptionKey($option);
 
 		if (null !== $this->cache) { // Try to get from cache first, else retrieve from DB
 			$dbValue = $this->cache->get($cacheKey);
@@ -293,7 +299,7 @@ class SysOptions extends Component {
 			}
 			if ((false === $dbValue) && null !== $dbValue = $this->retrieveDbValue($option)) {// Normal cache miss - query DB and cache result
 				/** @noinspection PhpConditionAlreadyCheckedInspection False positive - $dbValue could be any */
-				$this->cache->set($cacheKey, $dbValue, $this->cacheDuration, new TagDependency(['tags' => static::class."::get({$option})"]));
+				$this->cache->set($cacheKey, $dbValue, $this->cacheDuration, new TagDependency(['tags' => $cacheKey]));
 			}
 		} else { // No cache - retrieve directly
 			$dbValue = $this->retrieveDbValue($option);
@@ -315,7 +321,7 @@ class SysOptions extends Component {
 		$this->validateOptionName($option);
 		$result = $this->applyDbValue($option, $this->serialize($value));
 		if ($result && null !== $this->cache) {
-			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
+			TagDependency::invalidate($this->cache, [$this->buildOptionKey($option)]);
 		}
 		return $result;
 	}
@@ -330,7 +336,7 @@ class SysOptions extends Component {
 		$this->validateOptionName($option);
 		$result = $this->removeDbValue($option);
 		if ($result && null !== $this->cache) {
-			TagDependency::invalidate($this->cache, [static::class."::get({$option})"]);
+			TagDependency::invalidate($this->cache, [$this->buildOptionKey($option)]);
 		}
 		return $result;
 	}
@@ -446,7 +452,7 @@ class SysOptions extends Component {
 			// Invalidate only cache for deleted options (not entire cache)
 			if ($result && null !== $this->cache && !empty($optionNames)) {
 				$tags = array_map(
-					static fn(string $option):string => static::class."::get({$option})",
+					fn(string $option):string => $this->buildOptionKey($option),
 					$optionNames
 				);
 				TagDependency::invalidate($this->cache, $tags);
@@ -481,7 +487,7 @@ class SysOptions extends Component {
 		}
 
 		// Option exists in DB with actual value - re-cache it
-		$this->cache->set($cacheKey, $freshValue, $this->cacheDuration, new TagDependency(['tags' => static::class."::get({$option})"]));
+		$this->cache->set($cacheKey, $freshValue, $this->cacheDuration, new TagDependency(['tags' => $this->buildOptionKey($option)]));
 		return $freshValue;
 	}
 
@@ -551,4 +557,20 @@ class SysOptions extends Component {
 		return self::getServiceInstance()->drop($option);
 	}
 
+	/**
+	 * Builds cache key for an option
+	 *
+	 * Uses custom $cachePrefix if set, otherwise defaults to static::class.
+	 * This allows multiple SysOptions instances to use separate cache namespaces,
+	 * preventing cache collisions when multiple instances operate on different tables
+	 * or with different configurations.
+	 *
+	 * @param string $option The option name
+	 * @return string The cache key for this option (format: "prefix::get(option_name)")
+	 */
+	private function buildOptionKey(string $option):string {
+		return (null === $this->cachePrefix)
+			?static::class."::get({$option})"
+			:$this->cachePrefix."::get({$option})";
+	}
 }

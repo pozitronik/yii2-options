@@ -69,6 +69,7 @@ Configure the component with optional parameters:
 |----------------------------|--------------------------------|-----------------|------------------------------------------------------------|
 | `tableName`                | `string`                       | `'sys_options'` | Database table name for storing options                    |
 | `cache`                    | `string\|CacheInterface\|null` | `'cache'`       | Cache component ID or instance (null to disable caching)   |
+| `cachePrefix`              | `string\|null`                 | `null`          | Cache key prefix for namespace isolation (uses class name) |
 | `cacheDuration`            | `int\|null`                    | `null`          | Cache duration in seconds (null = infinite)                |
 | `db`                       | `string\|Connection`           | `'db'`          | Database connection component ID or instance               |
 | `allowedClasses`           | `bool\|array`                  | `true`          | Classes allowed for deserialization (see Security)         |
@@ -179,6 +180,34 @@ The extension uses Yii2's caching with TagDependency for automatic cache invalid
 ```
 
 Cache is automatically invalidated when options are modified.
+
+## Multiple Instances with Separate Cache Namespaces
+
+When using multiple SysOptions instances (e.g., for different tables or applications), you can use `cachePrefix` to prevent cache key collisions:
+
+```php
+'components' => [
+    // Application options
+    'appOptions' => [
+        'class' => \pozitronik\sys_options\models\SysOptions::class,
+        'tableName' => 'app_options',
+        'cachePrefix' => 'AppOptions',     // Custom cache prefix
+    ],
+
+    // User options
+    'userOptions' => [
+        'class' => \pozitronik\sys_options\models\SysOptions::class,
+        'tableName' => 'user_options',
+        'cachePrefix' => 'UserOptions',    // Different cache prefix
+    ],
+],
+```
+
+Each instance will use its own cache namespace, preventing interference:
+- `AppOptions::get(theme)` → Cache key: `AppOptions::get(theme)`
+- `UserOptions::get(theme)` → Cache key: `UserOptions::get(theme)`
+
+Without `cachePrefix`, both would use the same cache key based on the class name, causing cache collisions.
 
 ## Migrating from v1.x to v2.x
 
