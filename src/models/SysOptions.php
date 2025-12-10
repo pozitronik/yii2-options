@@ -282,10 +282,13 @@ class SysOptions extends Component {
 	 * Retrieves an option value from the database (with caching if enabled)
 	 * @param string $option The option name to retrieve
 	 * @param mixed $default Default value to return if option doesn't exist (null by default)
+	 * @param bool|null $keyExists Optional reference parameter that will be set to true if the option
+	 *                             exists in database, false otherwise. Useful when you need to distinguish
+	 *                             between "option exists with value X" and "option doesn't exist, returning default X".
 	 * @return mixed The option value or default if option doesn't exist
 	 * @throws Exception If option name validation fails
 	 */
-	public function get(string $option, mixed $default = null):mixed {
+	public function get(string $option, mixed $default = null, ?bool &$keyExists = null):mixed {
 		$this->validateOptionName($option);
 
 		$cacheKey = $this->buildOptionKey($option);
@@ -304,6 +307,8 @@ class SysOptions extends Component {
 		} else { // No cache - retrieve directly
 			$dbValue = $this->retrieveDbValue($option);
 		}
+
+		$keyExists = null !== $dbValue;
 
 		return (null === $dbValue)
 			?$default // If option doesn't exist in database, return default value
@@ -517,13 +522,15 @@ class SysOptions extends Component {
 	 *
 	 * @param string $option The option name
 	 * @param mixed $default Default value to return if option doesn't exist (null by default)
+	 * @param bool|null $keyExists Optional reference parameter that will be set to true if the option
+	 *                             exists in database, false otherwise.
 	 * @return mixed The option value or default if option doesn't exist
 	 * @throws Exception If 'sysoptions' component is not configured
 	 * @throws Throwable
 	 * @deprecated Have to be removed in the next versions
 	 */
-	public static function getStatic(string $option, mixed $default = null):mixed {
-		return self::getServiceInstance()->get($option, $default);
+	public static function getStatic(string $option, mixed $default = null, ?bool &$keyExists = null):mixed {
+		return self::getServiceInstance()->get($option, $default, $keyExists);
 	}
 
 	/**
